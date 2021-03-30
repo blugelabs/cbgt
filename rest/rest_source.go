@@ -12,7 +12,7 @@ package rest
 import (
 	"net/http"
 
-	"github.com/couchbase/cbgt"
+	"github.com/blugelabs/cbgt"
 )
 
 // ---------------------------------------------------

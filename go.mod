@@ -1,20 +1,12 @@
-module github.com/couchbase/cbgt
+module github.com/blugelabs/cbgt
 
 go 1.13
 
 require (
-	github.com/couchbase/blance v0.0.0-20201030011610-c73b54864c1a
-	github.com/couchbase/cbauth v0.0.0-20200508215310-0d352b097b19
-	github.com/couchbase/clog v0.0.0-20190523192451-b8e6d5d421bc
-	github.com/couchbase/go-couchbase v0.0.0-20201026062457-7b3be89bbd89
-	github.com/couchbase/gocbcore/v9 v9.1.4-0.20210325182448-577aecce6dc6
-	github.com/couchbase/gomemcached v0.0.0-20200618124739-5bac349aff71
-	github.com/couchbase/goutils v0.0.0-20191018232750-b49639060d85 // indirect
+	github.com/blugelabs/blance v1.0.0
 	github.com/elazarl/go-bindata-assetfs v1.0.0
 	github.com/gorilla/context v0.0.0-20141217160251-215affda49ad // indirect
 	github.com/gorilla/mux v1.4.1-0.20170524010104-043ee6597c29
-	github.com/pkg/errors v0.8.1-0.20180127015812-30136e27e2ac // indirect
 	github.com/rcrowley/go-metrics v0.0.0-20141108142129-dee209f2455f
-	golang.org/x/crypto v0.0.0-20171031160130-bd6f299fb381 // indirect
 	golang.org/x/net v0.0.0-20180120141536-44b7c21cbf19
 )

@@ -1,11 +1,11 @@
 cbgt
 ====
 
+NOTE: this is a fork of Couchbase's [cbgt](https://github.com/couchbase/cbgt) library prior to the BSL license change.  It has most of the Couchbase specific references removed, and uses the blugelabs fork of blance.  The unit tests pass, but it is not known to work beyond this.
+
 The cbgt project provides a golang library that helps manage
 distributed partitions (or data shards) across an elastic cluster of
 servers.
-
-[![Build Status](https://travis-ci.org/couchbase/cbgt.svg)](https://travis-ci.org/couchbase/cbgt) [![Coverage Status](https://coveralls.io/repos/couchbase/cbgt/badge.svg?branch=master&service=github)](https://coveralls.io/github/couchbase/cbgt?branch=master)
 
 #### Documentation
 

@@ -20,7 +20,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/couchbase/blance"
+	"github.com/blugelabs/blance"
 )
 
 // JSON/struct definitions of what the Manager stores in the Cfg.

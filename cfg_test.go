@@ -16,7 +16,6 @@ import (
 	"io/ioutil"
 	"os"
 	"runtime"
-	"strings"
 	"testing"
 )
 
@@ -150,7 +149,7 @@ func (c *ErrorUntilCfg) ClusterVersion() (uint64, error) {
 		return 0, fmt.Errorf("ClusterVersion error until %d",
 			c.errUntil)
 	}
-	return CompatibilityVersion(LeanPlanVersion)
+	return CompatibilityVersion(CfgAppVersion)
 }
 
 // ------------------------------------------------
@@ -466,41 +465,5 @@ func TestCfgMemRev(t *testing.T) {
 	}
 	if rev != "rev-yep" {
 		t.Errorf("expected rev-yep")
-	}
-}
-
-// ------------------------------------------------
-
-func TestCfgCB(t *testing.T) {
-	c, err := NewCfgCB("a bad url", "some bogus bucket")
-	if err == nil || c != nil {
-		t.Errorf("expected NewCfgCB to fail on bogus url")
-	}
-
-	c, err = NewCfgCB("http://fake:6666666", "some bogus bucket")
-	if err == nil || c != nil {
-		t.Errorf("expected NewCfgCB err on real-ish, but fake url")
-	}
-
-	c, err = NewCfgCBEx("http://fake:6666666", "some bogus bucket",
-		map[string]interface{}{})
-	if err == nil || c != nil {
-		t.Errorf("expected NewCfgCBEx err on real-ish, but fake url")
-	}
-
-	c, err = NewCfgCBEx("http://fake:6666666", "some bogus bucket",
-		map[string]interface{}{
-			"keyPrefix": "foo",
-		})
-	if err == nil || c != nil {
-		t.Errorf("expected NewCfgCBEx err fake url, with keyPrefix")
-	}
-
-	c, err = NewCfgCBEx("http://fake:66;http://fake:666;http://fake:6666",
-		"some bogus bucket", map[string]interface{}{})
-	if err == nil ||
-		!strings.Contains(err.Error(), "http://fake:6666") ||
-		c != nil {
-		t.Errorf("expected NewCfgCBEx err fake url on the last URL (%v)", err)
 	}
 }

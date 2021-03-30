@@ -14,7 +14,7 @@ package rebalance
 import (
 	"fmt"
 
-	"github.com/couchbase/cbgt"
+	"github.com/blugelabs/cbgt"
 )
 
 // RunRebalance synchronously runs a rebalance and reports progress

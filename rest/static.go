@@ -17,9 +17,9 @@ import (
 
 	"github.com/gorilla/mux"
 
-	log "github.com/couchbase/clog"
+	log "github.com/blugelabs/cbgt/log"
 
-	"github.com/couchbase/cbgt"
+	"github.com/blugelabs/cbgt"
 )
 
 // AssetFS returns the assetfs.AssetFS "filesystem" that holds static

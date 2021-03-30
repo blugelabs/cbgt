@@ -22,7 +22,7 @@ import (
 
 	"github.com/gorilla/mux"
 
-	"github.com/couchbase/cbgt"
+	"github.com/blugelabs/cbgt"
 )
 
 func TestInitStaticRouter(t *testing.T) {

@@ -20,7 +20,7 @@ import (
 	"strings"
 	"sync"
 
-	log "github.com/couchbase/clog"
+	log "github.com/blugelabs/cbgt/log"
 )
 
 const PINDEX_META_FILENAME string = "PINDEX_META"

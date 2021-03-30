@@ -19,8 +19,8 @@ import (
 	"strings"
 	"sync/atomic"
 
-	"github.com/couchbase/blance"
-	log "github.com/couchbase/clog"
+	"github.com/blugelabs/blance"
+	log "github.com/blugelabs/cbgt/log"
 )
 
 // PlannerHooks allows advanced applications to register callbacks

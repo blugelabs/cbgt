@@ -23,7 +23,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	log "github.com/couchbase/clog"
+	log "github.com/blugelabs/cbgt/log"
 )
 
 // FeedAllotmentOption is the manager option key used the specify how

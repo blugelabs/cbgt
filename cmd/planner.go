@@ -15,9 +15,9 @@ import (
 	"fmt"
 	"strconv"
 
-	log "github.com/couchbase/clog"
+	log "github.com/blugelabs/cbgt/log"
 
-	"github.com/couchbase/cbgt"
+	"github.com/blugelabs/cbgt"
 )
 
 // PlannerSteps helps command-line tools implement the planner steps:

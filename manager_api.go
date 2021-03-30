@@ -18,7 +18,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	log "github.com/couchbase/clog"
+	log "github.com/blugelabs/cbgt/log"
 )
 
 // INDEX_NAME_REGEXP is used to validate index definition names.
@@ -279,12 +279,6 @@ func (mgr *Manager) DeleteIndexEx(indexName, indexUUID string) (
 			" indexName: %s", indexName)
 	}
 
-	// Close associated couchbase.Bucket instances
-	cbBktMap.closeCouchbaseBucket(indexDef.SourceName, indexDef.SourceUUID)
-
-	// Close associated gocb.Bucket instances
-	agentsMap.closeClient(indexDef.SourceName, indexDef.SourceUUID)
-
 	indexDefs.UUID = NewUUID()
 	delete(indexDefs.IndexDefs, indexName)
 	indexDefs.ImplVersion = CfgGetVersion(mgr.cfg)
@@ -467,12 +461,6 @@ func (mgr *Manager) DeleteAllIndexFromSource(
 			" indexDefs.ImplVersion: %s > mgr.version: %s",
 			indexDefs.ImplVersion, mgr.version)
 	}
-
-	// close associated couchbase.Bucket instances
-	cbBktMap.closeCouchbaseBucket(sourceName, sourceUUID)
-
-	// close associated gocb.Bucket instances
-	agentsMap.closeClient(sourceName, sourceUUID)
 
 	var deletedCount uint64
 	for indexName, indexDef := range indexDefs.IndexDefs {

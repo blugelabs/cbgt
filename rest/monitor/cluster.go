@@ -21,10 +21,10 @@ import (
 	"sync"
 	"time"
 
-	log "github.com/couchbase/clog"
+	log "github.com/blugelabs/cbgt/log"
 
-	"github.com/couchbase/cbgt"
-	"github.com/couchbase/cbgt/rest"
+	"github.com/blugelabs/cbgt"
+	"github.com/blugelabs/cbgt/rest"
 )
 
 // A MonitorCluster struct holds all the tracking information for the

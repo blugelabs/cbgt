@@ -15,8 +15,8 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/couchbase/cbgt"
-	log "github.com/couchbase/clog"
+	"github.com/blugelabs/cbgt"
+	log "github.com/blugelabs/cbgt/log"
 )
 
 // DeleteIndexHandler is a REST handler that processes an index
@@ -41,23 +41,6 @@ func (h *DeleteIndexHandler) ServeHTTP(
 		ShowError(w, req, "rest_delete_index: index name is required",
 			http.StatusBadRequest)
 		return
-	}
-
-	ca := req.Header.Get(CLUSTER_ACTION)
-	if ca != "orchestrator-forwarded" {
-		// defer all error handling to the default flow.
-		indexDefs, _, _ := cbgt.CfgGetIndexDefs(h.mgr.Cfg())
-		if indexDefs != nil {
-			indexDef, _ := indexDefs.IndexDefs[indexName]
-			if indexDef != nil && (indexDef.Type == "fulltext-index" ||
-				indexDef.Type == "fulltext-alias") {
-				// if there was successful proxying of the request to
-				// the rebalance orchestrator node, then return early.
-				if proxyOrchestratorNodeOnRebalanceDone(w, req, h.mgr) {
-					return
-				}
-			}
-		}
 	}
 
 	log.Printf("rest_delete_index: delete index request received for %v", indexName)

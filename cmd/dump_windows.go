@@ -15,7 +15,7 @@
 package cmd
 
 import (
-	log "github.com/couchbase/clog"
+	log "github.com/blugelabs/cbgt/log"
 )
 
 func DumpOnSignalForPlatform() {

@@ -32,9 +32,9 @@ import (
 
 	"github.com/gorilla/mux"
 
-	log "github.com/couchbase/clog"
+	log "github.com/blugelabs/cbgt/log"
 
-	"github.com/couchbase/cbgt"
+	"github.com/blugelabs/cbgt"
 )
 
 var StartTime = time.Now()

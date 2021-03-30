@@ -14,9 +14,9 @@ package rebalance
 import (
 	"sort"
 
-	"github.com/couchbase/blance"
+	"github.com/blugelabs/blance"
 
-	"github.com/couchbase/cbgt"
+	"github.com/blugelabs/cbgt"
 )
 
 // ProgressToString defines the callback when there's progress and a

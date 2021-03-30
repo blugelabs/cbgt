@@ -21,7 +21,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/couchbase/cbgt"
+	"github.com/blugelabs/cbgt"
 )
 
 // DiagGetHandler is a REST handler that retrieves diagnostic

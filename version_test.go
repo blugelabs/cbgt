@@ -280,11 +280,11 @@ func TestVerifyEffectiveClusterVersion(t *testing.T) {
 		errUntil: 2,
 	}
 
-	rv, err := VerifyEffectiveClusterVersion(eac, LeanPlanVersion)
+	rv, err := VerifyEffectiveClusterVersion(eac, CfgAppVersion)
 	if err != nil {
 		t.Errorf("expected no err: %v", err)
 	}
 	if !rv {
-		t.Errorf("expected cluster version to match lean version %s", LeanPlanVersion)
+		t.Errorf("expected cluster version to match lean version %s", CfgAppVersion)
 	}
 }

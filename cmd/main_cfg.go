@@ -14,11 +14,9 @@ package cmd
 import (
 	"errors"
 	"fmt"
-	"net/url"
 	"os"
-	"strings"
 
-	"github.com/couchbase/cbgt"
+	"github.com/blugelabs/cbgt"
 )
 
 var ErrorBindHttp = errors.New("main_cfg:" +
@@ -45,12 +43,6 @@ func MainCfgEx(baseName, connect, bindHttp,
 	switch {
 	case connect == "", connect == "simple":
 		cfg, err = MainCfgSimple(baseName, connect, bindHttp, register, dataDir)
-	case strings.HasPrefix(connect, "couchbase:"):
-		cfg, err = MainCfgCB(baseName, connect[len("couchbase:"):],
-			bindHttp, register, dataDir)
-	case strings.HasPrefix(connect, "metakv"):
-		cfg, err = MainCfgMetaKv(baseName, connect[len("metakv"):],
-			bindHttp, register, dataDir, uuid, options)
 	default:
 		err = fmt.Errorf("main_cfg1: unsupported cfg connect: %s", connect)
 	}
@@ -76,49 +68,6 @@ func MainCfgSimple(baseName, connect, bindHttp, register, dataDir string) (
 	}
 
 	return cfg, nil
-}
-
-func MainCfgCB(baseName, urlStr, bindHttp, register, dataDir string) (
-	cbgt.Cfg, error) {
-	if (bindHttp[0] == ':' ||
-		strings.HasPrefix(bindHttp, "0.0.0.0:") ||
-		strings.HasPrefix(bindHttp, "127.0.0.1:") ||
-		strings.HasPrefix(bindHttp, "localhost:")) &&
-		register != "unwanted" &&
-		register != "unknown" {
-		return nil, ErrorBindHttp
-	}
-
-	u, err := url.Parse(urlStr)
-	if err != nil {
-		return nil, err
-	}
-
-	bucket := "default"
-	if u.User != nil && u.User.Username() != "" {
-		bucket = u.User.Username()
-	}
-
-	cfg, err := cbgt.NewCfgCB(urlStr, bucket)
-	if err != nil {
-		return nil, err
-	}
-
-	return cfg, nil
-}
-
-func MainCfgMetaKv(baseName, urlStr, bindHttp, register, dataDir, uuid string,
-	options map[string]string) (
-	cbgt.Cfg, error) {
-	cfg, err := cbgt.NewCfgMetaKv(uuid, options)
-	if err == nil {
-		// Useful for reseting internal testing.
-		if urlStr == ":removeAllKeys" {
-			cfg.RemoveAllKeys()
-		}
-		err = cfg.Load()
-	}
-	return cfg, err
 }
 
 // ------------------------------------------------

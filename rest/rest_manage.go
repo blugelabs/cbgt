@@ -20,8 +20,8 @@ import (
 
 	"math"
 
-	"github.com/couchbase/cbgt"
-	log "github.com/couchbase/clog"
+	"github.com/blugelabs/cbgt"
+	log "github.com/blugelabs/cbgt/log"
 )
 
 // ---------------------------------------------------

@@ -20,11 +20,11 @@ import (
 	"strings"
 	"sync"
 
-	log "github.com/couchbase/clog"
+	log "github.com/blugelabs/cbgt/log"
 
-	"github.com/couchbase/blance"
-	"github.com/couchbase/cbgt"
-	"github.com/couchbase/cbgt/rest/monitor"
+	"github.com/blugelabs/blance"
+	"github.com/blugelabs/cbgt"
+	"github.com/blugelabs/cbgt/rest/monitor"
 )
 
 var ErrorNotPausable = errors.New("not pausable")

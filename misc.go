@@ -26,7 +26,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	log "github.com/couchbase/clog"
+	log "github.com/blugelabs/cbgt/log"
 	"github.com/rcrowley/go-metrics"
 )
 

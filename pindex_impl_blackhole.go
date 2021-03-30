@@ -19,7 +19,7 @@ import (
 	"os"
 	"reflect"
 
-	log "github.com/couchbase/clog"
+	log "github.com/blugelabs/cbgt/log"
 )
 
 func init() {

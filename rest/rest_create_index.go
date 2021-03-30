@@ -12,7 +12,6 @@
 package rest
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -22,8 +21,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/couchbase/cbgt"
-	log "github.com/couchbase/clog"
+	"github.com/blugelabs/cbgt"
+	log "github.com/blugelabs/cbgt/log"
 )
 
 // CreateIndexHandler is a REST handler that processes an index
@@ -180,18 +179,6 @@ func (h *CreateIndexHandler) ServeHTTP(
 		return
 	}
 
-	ca := req.Header.Get(CLUSTER_ACTION)
-	if ca != "orchestrator-forwarded" &&
-		(indexType == "fulltext-index" || indexType == "fulltext-alias") {
-		// populate the body since we already read it.
-		req.Body = ioutil.NopCloser(bytes.NewReader(requestBody))
-		// if there was successful proxying of the request to the rebalance
-		// orchestrator node, then return early.
-		if proxyOrchestratorNodeOnRebalanceDone(w, req, h.mgr) {
-			return
-		}
-	}
-
 	sourceUUID := req.FormValue("sourceUUID") // Defaults to "".
 	if sourceUUID == "" {
 		sourceUUID = indexDef.SourceUUID
@@ -270,11 +257,6 @@ func ExtractSourceTypeName(req *http.Request, indexDef *cbgt.IndexDef, indexName
 	}
 	if sourceName == "" {
 		// NOTE: Some sourceTypes (like "nil") don't care if sourceName is "".
-		if sourceType == cbgt.SOURCE_GOCOUCHBASE ||
-			sourceType == cbgt.SOURCE_GOCBCORE {
-			// TODO: Revisit default sourceName as indexName.
-			sourceName = indexName
-		}
 	}
 	return sourceType, sourceName
 }

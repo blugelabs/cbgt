@@ -15,7 +15,7 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/couchbase/cbgt"
+	"github.com/blugelabs/cbgt"
 )
 
 // TODO: Need to give the codebase a scrub of its log

@@ -15,7 +15,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	log "github.com/couchbase/clog"
+	log "github.com/blugelabs/cbgt/log"
 )
 
 // The cbgt.VERSION tracks persistence versioning (schema/format of
@@ -185,3 +185,5 @@ func retry(attempts int, f func() (uint64, error)) (val uint64, err error) {
 	}
 	return val, err
 }
+
+var CfgAppVersion = "6.5.0"

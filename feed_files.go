@@ -26,7 +26,7 @@ import (
 	"sync"
 	"time"
 
-	log "github.com/couchbase/clog"
+	log "github.com/blugelabs/cbgt/log"
 )
 
 const FILES_FEED_SLEEP_START_MS = 5000

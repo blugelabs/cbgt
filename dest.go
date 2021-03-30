@@ -16,7 +16,7 @@ import (
 	"io"
 	"sync/atomic"
 
-	log "github.com/couchbase/clog"
+	log "github.com/blugelabs/cbgt/log"
 	"github.com/rcrowley/go-metrics"
 )
 
@@ -135,25 +135,6 @@ type DestExtrasType uint16
 // DEST_EXTRAS_TYPE_NIL means there are no extras as part of a
 // Dest.DataUpdate/DataDelete invocation.
 const DEST_EXTRAS_TYPE_NIL = DestExtrasType(0)
-
-// DestCollection interface needs to be implemented by the dest/pindex
-// implementations which consumes data from the collections.
-type DestCollection interface {
-	// PrepareFeedParams provides a way for the pindex
-	// implementation to customise any DCPFeedParams.
-	PrepareFeedParams(partition string, params *DCPFeedParams) error
-
-	// Invoked when there's a DCP message for a connection that uses
-	// OSOBackfill indicating the start or the end of an OSO snapshot.
-	// snapshotType:
-	//   - 0x01: start
-	//   - 0x02: end
-	OSOSnapshot(partition string, snapshotType uint32) error
-
-	// Invoked when there's a DCP message indicating that the seqno
-	// for the partition has to be advanced.
-	SeqNoAdvanced(partition string, seq uint64) error
-}
 
 // DestStats holds the common stats or metrics for a Dest.
 type DestStats struct {
