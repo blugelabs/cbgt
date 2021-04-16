@@ -197,17 +197,9 @@ type ManagerEventHandlers interface {
 	OnFeedError(srcType string, r Feed, err error)
 }
 
-// NewManager returns a new, ready-to-be-started Manager instance.
-func NewManager(version string, cfg Cfg, uuid string, tags []string,
-	container string, weight int, extras, bindHttp, dataDir, server string,
-	meh ManagerEventHandlers) *Manager {
-	return NewManagerEx(version, cfg, uuid, tags, container, weight, extras,
-		bindHttp, dataDir, server, meh, nil)
-}
-
-// NewManagerEx returns a new, ready-to-be-started Manager instance,
+// NewManager returns a new, ready-to-be-started Manager instance,
 // with additional options.
-func NewManagerEx(version string, cfg Cfg, uuid string, tags []string,
+func NewManager(version string, cfg Cfg, uuid string, tags []string,
 	container string, weight int, extras, bindHttp, dataDir, server string,
 	meh ManagerEventHandlers, options map[string]string) *Manager {
 	if options == nil {
@@ -545,10 +537,10 @@ func (mgr *Manager) LoadDataDir() error {
 					continue
 				}
 				// we have already validated the pindex paths, hence feeding directly
-				pindex, err := OpenPIndex(mgr, req.path)
+				pindex, err := openPIndex(mgr, req.path)
 				if err != nil {
 					if strings.Contains(err.Error(), panicCallStack) {
-						log.Printf("manager: OpenPIndex error,"+
+						log.Printf("manager: openPIndex error,"+
 							" cleaning up and trying NewPIndex,"+
 							" path: %s, err: %v", req.path, err)
 						os.RemoveAll(req.path)
@@ -1100,16 +1092,16 @@ func (mgr *Manager) checkAndStoreStablePlanPIndexes(planPIndexes *PlanPIndexes) 
 
 // ---------------------------------------------------------------
 
-// PIndexPath returns the filesystem path for a given named pindex.
-// See also ParsePIndexPath().
+// pIndexPath returns the filesystem path for a given named pindex.
+// See also parsePIndexPath().
 func (mgr *Manager) PIndexPath(pindexName string) string {
-	return PIndexPath(mgr.dataDir, pindexName)
+	return pIndexPath(mgr.dataDir, pindexName)
 }
 
-// ParsePIndexPath returns the name for a pindex given a filesystem
-// path.  See also PIndexPath().
+// parsePIndexPath returns the name for a pindex given a filesystem
+// path.  See also pIndexPath().
 func (mgr *Manager) ParsePIndexPath(pindexPath string) (string, bool) {
-	return ParsePIndexPath(mgr.dataDir, pindexPath)
+	return parsePIndexPath(mgr.dataDir, pindexPath)
 }
 
 // ---------------------------------------------------------------

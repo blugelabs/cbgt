@@ -200,9 +200,9 @@ func NewPIndex(mgr *Manager, name, uuid,
 	return pindex, nil
 }
 
-// OpenPIndex reopens a previously created pindex.  The path argument
+// openPIndex reopens a previously created pindex.  The path argument
 // must be a directory for the pindex.
-func OpenPIndex(mgr *Manager, path string) (pindex *PIndex, err error) {
+func openPIndex(mgr *Manager, path string) (pindex *PIndex, err error) {
 	pindex = &PIndex{}
 	// load PINDEX_META only if manager's dataDir is set
 	if mgr != nil && len(mgr.dataDir) > 0 {
@@ -226,7 +226,7 @@ func OpenPIndex(mgr *Manager, path string) (pindex *PIndex, err error) {
 
 	defer func() {
 		if r := recover(); r != nil {
-			err = fmt.Errorf("pindex: OpenPIndex panic msg: %v \n, %v",
+			err = fmt.Errorf("pindex: openPIndex panic msg: %v \n, %v",
 				r, ReadableStackTrace())
 		}
 	}()
@@ -251,13 +251,13 @@ func OpenPIndex(mgr *Manager, path string) (pindex *PIndex, err error) {
 }
 
 // Computes the storage path for a pindex.
-func PIndexPath(dataDir, pindexName string) string {
+func pIndexPath(dataDir, pindexName string) string {
 	// TODO: Need path security checks / mapping here; ex: "../etc/pswd"
 	return dataDir + string(os.PathSeparator) + pindexName + pindexPathSuffix
 }
 
 // Retrieves a pindex name from a pindex path.
-func ParsePIndexPath(dataDir, pindexPath string) (string, bool) {
+func parsePIndexPath(dataDir, pindexPath string) (string, bool) {
 	if !strings.HasSuffix(pindexPath, pindexPathSuffix) {
 		return "", false
 	}

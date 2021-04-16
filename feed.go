@@ -20,7 +20,7 @@ import (
 
 // A Feed interface represents an abstract data source.  A Feed
 // instance is hooked up to one-or-more Dest instances.  When incoming
-// data is received by a Feed, the Feed will invoke relvate methods on
+// data is received by a Feed, the Feed will invoke relevant methods on
 // the relevant Dest instances.
 //
 // In this codebase, the words "index source", "source" and "data

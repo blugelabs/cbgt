@@ -25,9 +25,9 @@ import (
 )
 
 func TestOpenPIndex(t *testing.T) {
-	pindex, err := OpenPIndex(nil, "not-a-real-file")
+	pindex, err := openPIndex(nil, "not-a-real-file")
 	if pindex != nil || err == nil {
-		t.Errorf("expected OpenPIndex to fail on a bad file")
+		t.Errorf("expected openPIndex to fail on a bad file")
 	}
 }
 
@@ -39,7 +39,7 @@ func TestNewPIndex(t *testing.T) {
 		"blackhole", "indexName", "indexUUID", "",
 		"sourceType", "sourceName", "sourceUUID",
 		"sourceParams", "sourcePartitions",
-		PIndexPath(emptyDir, "fake"))
+		pIndexPath(emptyDir, "fake"))
 	if pindex == nil || err != nil {
 		t.Errorf("expected NewPIndex to work")
 	}
@@ -57,7 +57,7 @@ func TestClonePIndex(t *testing.T) {
 		"blackhole", "indexName", "indexUUID", "",
 		"sourceType", "sourceName", "sourceUUID",
 		"sourceParams", "sourcePartitions",
-		PIndexPath(emptyDir, "fake"))
+		pIndexPath(emptyDir, "fake"))
 	if pindex == nil || err != nil {
 		t.Errorf("expected NewPIndex to work")
 	}

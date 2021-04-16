@@ -297,7 +297,7 @@ func TestStartFilesFeed(t *testing.T) {
 	cfg := NewCfgMem()
 	meh := &TestMEH{}
 	mgr := NewManager(VERSION, cfg, NewUUID(), nil,
-		"", 1, "", ":1000", emptyDir, "some-datasource", meh)
+		"", 1, "", ":1000", emptyDir, "some-datasource", meh, nil)
 	err := mgr.Start("wanted")
 	if err != nil {
 		t.Errorf("expected Manager.Start() to work, err: %v", err)

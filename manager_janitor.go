@@ -266,7 +266,7 @@ func (mgr *Manager) restartPIndex(req *pindexRestartReq) error {
 	}
 
 	// open the pindex and register
-	pindex, err := OpenPIndex(mgr, pi.Path)
+	pindex, err := openPIndex(mgr, pi.Path)
 	if err != nil {
 		cleanDir(req.pindex.Path)
 		return fmt.Errorf("janitor: restartPIndex could not open "+
@@ -938,13 +938,13 @@ func (mgr *Manager) startPIndex(planPIndex *PlanPIndex) error {
 	var err error
 
 	path := mgr.PIndexPath(planPIndex.Name)
-	// First, try reading the path with OpenPIndex().  An
+	// First, try reading the path with openPIndex().  An
 	// existing path might happen during a case of rollback.
 	_, err = os.Stat(path)
 	if err == nil {
-		pindex, err = OpenPIndex(mgr, path)
+		pindex, err = openPIndex(mgr, path)
 		if err != nil {
-			log.Errorf("janitor: startPIndex, OpenPIndex error,"+
+			log.Errorf("janitor: startPIndex, openPIndex error,"+
 				" cleaning up and trying NewPIndex,"+
 				" path: %s, err: %v", path, err)
 			os.RemoveAll(path)
