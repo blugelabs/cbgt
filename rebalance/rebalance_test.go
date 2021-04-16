@@ -190,7 +190,7 @@ func TestRebalance(t *testing.T) {
 			}
 		}
 
-		r, err := StartRebalance(cbgt.VERSION, cfg, ".", nil,
+		r, err := StartRebalance(cbgt.Version, cfg, ".", nil,
 			nodesToRemove,
 			RebalanceOptions{
 				HttpGet:       httpGet,
@@ -251,7 +251,7 @@ func TestRebalance(t *testing.T) {
 		}
 
 		endIndexDefs, endNodeDefs, endPlanPIndexes, _, err :=
-			cbgt.PlannerGetPlan(cfg, cbgt.VERSION, "")
+			cbgt.PlannerGetPlan(cfg, cbgt.Version, "")
 		if err != nil {
 			t.Errorf("expected no err, got: %v", err)
 		}
@@ -436,7 +436,7 @@ func startNodeManager(testDir string, cfg cbgt.Cfg, node, register string,
 
 	meh := cbgt.ManagerEventHandlers(nil)
 
-	mgr = cbgt.NewManager(cbgt.VERSION, cfg, uuid,
+	mgr = cbgt.NewManager(cbgt.Version, cfg, uuid,
 		tags, container, weight, extras,
 		bindHttp, dataDir, server, meh)
 
@@ -630,7 +630,7 @@ func TestRebalanceStatsErrorCase(t *testing.T) {
 			errThreshold = 0
 		}
 
-		r, err := StartRebalance(cbgt.VERSION, cfg, ".", nil,
+		r, err := StartRebalance(cbgt.Version, cfg, ".", nil,
 			nodesToRemove,
 			RebalanceOptions{
 				HttpGet:                   httpGet,
@@ -694,7 +694,7 @@ func TestRebalanceStatsErrorCase(t *testing.T) {
 		}
 
 		endIndexDefs, endNodeDefs, endPlanPIndexes, _, err :=
-			cbgt.PlannerGetPlan(cfg, cbgt.VERSION, "")
+			cbgt.PlannerGetPlan(cfg, cbgt.Version, "")
 		if err != nil {
 			t.Errorf("no err expected, got: %v", err)
 		}

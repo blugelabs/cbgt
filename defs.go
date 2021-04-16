@@ -24,7 +24,7 @@ import (
 )
 
 // JSON/struct definitions of what the Manager stores in the Cfg.
-// NOTE: You *must* update VERSION if you change these
+// NOTE: You *must* update Version if you change these
 // definitions or the planning algorithms change.
 
 // An IndexDefs is zero or more index definitions.
@@ -32,7 +32,7 @@ type IndexDefs struct {
 	// IndexDefs.UUID changes whenever any child IndexDef changes.
 	UUID        string               `json:"uuid"`        // Like a revision id.
 	IndexDefs   map[string]*IndexDef `json:"indexDefs"`   // Key is IndexDef.Name.
-	ImplVersion string               `json:"implVersion"` // See VERSION.
+	ImplVersion string               `json:"implVersion"` // See Version.
 }
 
 // An IndexDef is a logical index definition.
@@ -138,14 +138,14 @@ type NodeDefs struct {
 	// NodeDefs.UUID changes whenever any child NodeDef changes.
 	UUID        string              `json:"uuid"`        // Like a revision id.
 	NodeDefs    map[string]*NodeDef `json:"nodeDefs"`    // Key is NodeDef.UUID.
-	ImplVersion string              `json:"implVersion"` // See VERSION.
+	ImplVersion string              `json:"implVersion"` // See Version.
 }
 
 // A NodeDef is a node definition.
 type NodeDef struct {
 	HostPort    string   `json:"hostPort"`
 	UUID        string   `json:"uuid"`
-	ImplVersion string   `json:"implVersion"` // See VERSION.
+	ImplVersion string   `json:"implVersion"` // See Version.
 	Tags        []string `json:"tags"`
 	Container   string   `json:"container"`
 	Weight      int      `json:"weight"`
@@ -183,7 +183,7 @@ type PlanPIndexes struct {
 	// PlanPIndexes.UUID changes whenever any child PlanPIndex changes.
 	UUID         string                 `json:"uuid"`         // Like a revision id.
 	PlanPIndexes map[string]*PlanPIndex `json:"planPIndexes"` // Key is PlanPIndex.Name.
-	ImplVersion  string                 `json:"implVersion"`  // See VERSION.
+	ImplVersion  string                 `json:"implVersion"`  // See Version.
 	Warnings     map[string][]string    `json:"warnings"`     // Key is IndexDef.Name.
 }
 
@@ -336,9 +336,9 @@ func NewNodeDefs(version string) *NodeDefs {
 
 // CfgGetVersion returns the Cfg version
 func CfgGetVersion(cfg Cfg) string {
-	v, _, err := cfg.Get(VERSION_KEY, 0)
+	v, _, err := cfg.Get(versionKey, 0)
 	if err != nil || v == nil {
-		return VERSION
+		return Version
 	}
 	return string(v)
 }

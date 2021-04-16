@@ -33,7 +33,7 @@ func MainCommon(version string, flagAliases map[string][]string) {
 	}
 
 	log.Printf("main: %s started (%s/%s)",
-		os.Args[0], version, cbgt.VERSION)
+		os.Args[0], version, cbgt.Version)
 
 	rand.Seed(time.Now().UTC().UnixNano())
 

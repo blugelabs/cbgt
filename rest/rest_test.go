@@ -92,7 +92,7 @@ func TestNewRESTRouter(t *testing.T) {
 	}
 
 	cfg := cbgt.NewCfgMem()
-	mgr := cbgt.NewManager(cbgt.VERSION, cfg, cbgt.NewUUID(),
+	mgr := cbgt.NewManager(cbgt.Version, cfg, cbgt.NewUUID(),
 		nil, "", 1, "", ":1000",
 		emptyDir, "some-datasource", nil)
 	r, meta, err := NewRESTRouter("v0", mgr, emptyDir, "", ring,
@@ -101,7 +101,7 @@ func TestNewRESTRouter(t *testing.T) {
 		t.Errorf("expected no errors")
 	}
 
-	mgr = cbgt.NewManager(cbgt.VERSION, cfg, cbgt.NewUUID(),
+	mgr = cbgt.NewManager(cbgt.Version, cfg, cbgt.NewUUID(),
 		[]string{"queryer", "anotherTag"},
 		"", 1, "", ":1000", emptyDir, "some-datasource", nil)
 	r, meta, err = NewRESTRouter("v0", mgr, emptyDir, "", ring,
@@ -185,7 +185,7 @@ func TestHandlersForRuntimeOps(t *testing.T) {
 
 	cfg := cbgt.NewCfgMem()
 	meh := &TestMEH{}
-	mgr := cbgt.NewManager(cbgt.VERSION, cfg, cbgt.NewUUID(),
+	mgr := cbgt.NewManager(cbgt.Version, cfg, cbgt.NewUUID(),
 		nil, "", 1, "", ":1000", emptyDir, "some-datasource", meh)
 	err = mgr.Start("wanted")
 	if err != nil {
@@ -278,7 +278,7 @@ func TestHandlersForEmptyManager(t *testing.T) {
 
 	cfg := cbgt.NewCfgMem()
 	meh := &TestMEH{}
-	mgr := cbgt.NewManager(cbgt.VERSION, cfg, cbgt.NewUUID(),
+	mgr := cbgt.NewManager(cbgt.Version, cfg, cbgt.NewUUID(),
 		nil, "", 1, "", ":1000", emptyDir, "some-datasource", meh)
 	err := mgr.Start("wanted")
 	if err != nil {

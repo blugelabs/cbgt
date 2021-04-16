@@ -77,7 +77,7 @@ func PlannerSteps(steps map[string]bool,
 
 		if !dryRun {
 			_, err :=
-				cbgt.Plan(cfg, cbgt.VERSION, "", server, options, plannerFilter)
+				cbgt.Plan(cfg, cbgt.Version, "", server, options, plannerFilter)
 			if err != nil {
 				return err
 			}
@@ -88,7 +88,7 @@ func PlannerSteps(steps map[string]bool,
 		log.Printf("planner: step failover_")
 
 		if !dryRun {
-			_, err := Failover(cfg, cbgt.VERSION, server, options, nodesRemove)
+			_, err := Failover(cfg, cbgt.Version, server, options, nodesRemove)
 			if err != nil {
 				return err
 			}

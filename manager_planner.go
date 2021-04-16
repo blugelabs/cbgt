@@ -74,7 +74,7 @@ func NoopPlannerHook(x PlannerHookInfo) (PlannerHookInfo, bool, error) {
 
 // -------------------------------------------------------
 
-// NOTE: You *must* update VERSION if the planning algorithm or config
+// NOTE: You *must* update Version if the planning algorithm or config
 // data schema changes, following semver rules.
 
 // PlannerNOOP sends a synchronous NOOP request to the manager's planner, if any.
@@ -251,9 +251,9 @@ func PlannerGetPlan(cfg Cfg, version string, uuid string) (
 
 // PlannerCheckVersion errors if a version string is too low.
 func PlannerCheckVersion(cfg Cfg, version string) error {
-	ok, err := CheckVersion(cfg, version)
+	ok, err := checkVersion(cfg, version)
 	if err != nil {
-		return fmt.Errorf("planner: CheckVersion err: %v", err)
+		return fmt.Errorf("planner: checkVersion err: %v", err)
 	}
 	if !ok {
 		return fmt.Errorf("planner: version too low: %v", version)

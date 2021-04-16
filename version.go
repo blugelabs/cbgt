@@ -18,33 +18,33 @@ import (
 	log "github.com/blugelabs/cbgt/log"
 )
 
-// The cbgt.VERSION tracks persistence versioning (schema/format of
-// persisted data and configuration).  The main.VERSION from "git
+// The cbgt.Version tracks persistence versioning (schema/format of
+// persisted data and configuration).  The main.Version from "git
 // describe" that's part of an executable command, in contrast, is an
 // overall "product" version.  For example, we might introduce new
 // UI-only features or fix a UI typo, in which case we'd bump the
-// main.VERSION number; but, if the persisted data/config format was
-// unchanged, then the cbgt.VERSION number should remain unchanged.
+// main.Version number; but, if the persisted data/config format was
+// unchanged, then the cbgt.Version number should remain unchanged.
 //
-// NOTE: You *must* update cbgt.VERSION if you change what's stored in
+// NOTE: You *must* update cbgt.Version if you change what's stored in
 // the Cfg (such as the JSON/struct definitions or the planning
 // algorithms).
-const VERSION = "5.5.0"
-const VERSION_KEY = "version"
+const Version = "5.5.0"
+const versionKey = "version"
 
 // Returns true if a given version is modern enough to modify the Cfg.
 // Older versions (which are running with older JSON/struct definitions
-// or planning algorithms) will see false from their CheckVersion()'s.
-func CheckVersion(cfg Cfg, myVersion string) (bool, error) {
+// or planning algorithms) will see false from their checkVersion()'s.
+func checkVersion(cfg Cfg, myVersion string) (bool, error) {
 	tries := 0
 	for cfg != nil {
 		tries += 1
 		if tries > 100 {
 			return false,
-				fmt.Errorf("version: CheckVersion too many tries")
+				fmt.Errorf("version: checkVersion too many tries")
 		}
 
-		clusterVersion, cas, err := cfg.Get(VERSION_KEY, 0)
+		clusterVersion, cas, err := cfg.Get(versionKey, 0)
 		if err != nil {
 			return false, err
 		}
@@ -52,7 +52,7 @@ func CheckVersion(cfg Cfg, myVersion string) (bool, error) {
 		if clusterVersion == nil {
 			// First time initialization, so save myVersion to cfg and
 			// retry in case there was a race.
-			_, err = cfg.Set(VERSION_KEY, []byte(myVersion), cas)
+			_, err = cfg.Set(versionKey, []byte(myVersion), cas)
 			if err != nil {
 				if _, ok := err.(*CfgCASError); ok {
 					// Retry if it was a CAS mismatch due to
@@ -60,9 +60,9 @@ func CheckVersion(cfg Cfg, myVersion string) (bool, error) {
 					continue
 				}
 				return false, fmt.Errorf("version:"+
-					" could not save VERSION to cfg, err: %v", err)
+					" could not save Version to cfg, err: %v", err)
 			}
-			log.Printf("version: CheckVersion, Cfg version updated %s",
+			log.Printf("version: checkVersion, Cfg version updated %s",
 				myVersion)
 			continue
 		}
@@ -80,9 +80,9 @@ func CheckVersion(cfg Cfg, myVersion string) (bool, error) {
 			if err != nil {
 				return false, err
 			}
-			// CheckVersion passes even if no bump version is required
+			// checkVersion passes even if no bump version is required
 			if !bumpVersion {
-				log.Printf("version: CheckVersion, no bump for current Cfg"+
+				log.Printf("version: checkVersion, no bump for current Cfg"+
 					" verion: %s", clusterVersion)
 				return true, nil
 			}
@@ -90,7 +90,7 @@ func CheckVersion(cfg Cfg, myVersion string) (bool, error) {
 			// Found myVersion is higher than the clusterVersion and
 			// all cluster nodes are on the same myVersion, so save
 			// myVersion to cfg and retry in case there was a race.
-			_, err = cfg.Set(VERSION_KEY, []byte(myVersion), cas)
+			_, err = cfg.Set(versionKey, []byte(myVersion), cas)
 			if err != nil {
 				if _, ok := err.(*CfgCASError); ok {
 					// Retry if it was a CAS mismatch due to
@@ -98,9 +98,9 @@ func CheckVersion(cfg Cfg, myVersion string) (bool, error) {
 					continue
 				}
 				return false, fmt.Errorf("version:"+
-					" could not update VERSION in cfg, err: %v", err)
+					" could not update Version in cfg, err: %v", err)
 			}
-			log.Printf("version: CheckVersion, Cfg version updated %s",
+			log.Printf("version: checkVersion, Cfg version updated %s",
 				myVersion)
 			continue
 		}

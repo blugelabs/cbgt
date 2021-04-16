@@ -22,7 +22,7 @@ import (
 func RunRebalance(cfg cbgt.Cfg, server string, options map[string]string,
 	nodesToRemove []string, favorMinNodes bool, dryRun bool, verbose int,
 	progressToString ProgressToString) error {
-	r, err := StartRebalance(cbgt.VERSION, cfg, server, options,
+	r, err := StartRebalance(cbgt.Version, cfg, server, options,
 		nodesToRemove,
 		RebalanceOptions{
 			FavorMinNodes: favorMinNodes,

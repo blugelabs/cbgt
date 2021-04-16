@@ -52,7 +52,7 @@ import (
 // As part of server: multiple urls permitted with ';' delimiter.
 type Manager struct {
 	startTime time.Time
-	version   string // See VERSION.
+	version   string // See Version.
 	cfg       Cfg
 	uuid      string          // Unique to every Manager instance.
 	tags      []string        // The tags at Manager start.
