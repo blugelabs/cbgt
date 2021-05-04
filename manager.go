@@ -17,6 +17,7 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -25,8 +26,6 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
-
-	log "github.com/blugelabs/cbgt/log"
 )
 
 // A Manager represents a runtime node in a cluster.
@@ -90,6 +89,8 @@ type Manager struct {
 	events      *list.List
 
 	stablePlanPIndexesMutex sync.RWMutex // Protects the local stable plan access.
+
+	log Log
 }
 
 // ManagerStats represents the stats/metrics tracked by a Manager
@@ -199,17 +200,22 @@ type ManagerEventHandlers interface {
 
 // NewManager returns a new, ready-to-be-started Manager instance,
 // with additional options.
-func NewManager(version string, cfg Cfg, uuid string, tags []string,
+func NewManager(version string, cfg Cfg, l Log, uuid string, tags []string,
 	container string, weight int, extras, bindHttp, dataDir, server string,
 	meh ManagerEventHandlers, options map[string]string) *Manager {
 	if options == nil {
 		options = map[string]string{}
 	}
 
+	if l == nil {
+		l = NewStdLibLog(os.Stderr, "", log.LstdFlags)
+	}
+
 	return &Manager{
 		startTime:       time.Now(),
 		version:         version,
 		cfg:             cfg,
+		log:             l,
 		uuid:            uuid,
 		tags:            tags,
 		tagsMap:         StringsToMap(tags),
@@ -545,7 +551,7 @@ func (mgr *Manager) LoadDataDir() error {
 							" path: %s, err: %v", req.path, err)
 						os.RemoveAll(req.path)
 					} else {
-						log.Errorf("manager: could not open pindex path: %s, err: %v",
+						mgr.log.Errorf("manager: could not open pindex path: %s, err: %v",
 							req.path, err)
 					}
 				} else {
@@ -637,15 +643,11 @@ func (mgr *Manager) registerPIndex(pindex *PIndex) error {
 	mgr.coveringCache = nil
 
 	if mgr.meh != nil {
-		start := time.Now()
 		mgr.meh.OnRegisterPIndex(pindex)
-		log.Printf("manager: registerPIndex, meh OnRegisterPIndex took: %s", time.Since(start))
 	}
 
 	if RegisteredPIndexCallbacks.OnCreate != nil {
-		start := time.Now()
 		RegisteredPIndexCallbacks.OnCreate(pindex.Name)
-		log.Printf("manager: registerPIndex, meh PIndex OnCreate took: %s", time.Since(start))
 	}
 
 	return nil
@@ -671,15 +673,11 @@ func (mgr *Manager) unregisterPIndex(name string, pindexToMatch *PIndex) *PIndex
 		mgr.coveringCache = nil
 
 		if mgr.meh != nil {
-			start := time.Now()
 			mgr.meh.OnUnregisterPIndex(pindex)
-			log.Printf("manager: unregisterPIndex, meh OnUnregisterPIndex took: %s", time.Since(start))
 		}
 
 		if RegisteredPIndexCallbacks.OnDelete != nil {
-			start := time.Now()
 			RegisteredPIndexCallbacks.OnDelete(pindex.Name)
-			log.Printf("manager: unregisterPIndex, meh PIndex OnDelete took: %s", time.Since(start))
 		}
 	}
 
@@ -764,20 +762,16 @@ func (mgr *Manager) GetNodeDefs(kind string, refresh bool) (
 	if nodeDefs == nil || refresh {
 		mgr.m.Lock()
 		defer mgr.m.Unlock()
-		start := time.Now()
 		nodeDefs, _, err = CfgGetNodeDefs(mgr.Cfg(), kind)
 		if err != nil {
 			return nil, err
 		}
-		log.Printf("manager: GetNodeDefs, CfgGetNodeDefs took: %s", time.Since(start))
 		mgr.lastNodeDefs[kind] = nodeDefs
 		atomic.AddUint64(&mgr.stats.TotRefreshLastNodeDefs, 1)
 		mgr.coveringCache = nil
 
 		if RegisteredPIndexCallbacks.OnRefresh != nil {
-			start := time.Now()
 			RegisteredPIndexCallbacks.OnRefresh()
-			log.Printf("manager: GetNodeDefs, PIndex OnRefresh took: %s", time.Since(start))
 		}
 	}
 
@@ -797,12 +791,10 @@ func (mgr *Manager) GetIndexDefs(refresh bool) (
 	if lastIndexDefs == nil || refresh {
 		mgr.m.Lock()
 		defer mgr.m.Unlock()
-		start := time.Now()
 		lastIndexDefs, _, err := CfgGetIndexDefs(mgr.cfg)
 		if err != nil {
 			return nil, nil, err
 		}
-		log.Printf("manager: GetIndexDefs, CfgGetIndexDefs took: %s", time.Since(start))
 		mgr.lastIndexDefs = lastIndexDefs
 		atomic.AddUint64(&mgr.stats.TotRefreshLastIndexDefs, 1)
 
@@ -817,9 +809,7 @@ func (mgr *Manager) GetIndexDefs(refresh bool) (
 		mgr.coveringCache = nil
 
 		if RegisteredPIndexCallbacks.OnRefresh != nil {
-			start := time.Now()
 			RegisteredPIndexCallbacks.OnRefresh()
-			log.Printf("manager: GetIndexDefs, PIndex OnRefresh took: %s", time.Since(start))
 		}
 	}
 
@@ -887,18 +877,14 @@ func (mgr *Manager) GetPlanPIndexes(refresh bool) (
 		mgr.m.Lock()
 		defer mgr.m.Unlock()
 
-		start := time.Now()
 		lastPlanPIndexes, _, err := CfgGetPlanPIndexes(mgr.cfg)
 		if err != nil {
 			return nil, nil, err
 		}
-		log.Printf("manager: GetPlanPIndexes, CfgGetPlanPIndexes took: %s", time.Since(start))
 		// skip disk writes on repeated Cfg callbacks.
 		if !reflect.DeepEqual(mgr.lastPlanPIndexes, lastPlanPIndexes) {
 			// make a local copy of the updated plan,
-			start := time.Now()
 			mgr.checkAndStoreStablePlanPIndexes(lastPlanPIndexes)
-			log.Printf("manager: GetPlanPIndexes, checkAndStoreStablePlanPIndexes took: %s", time.Since(start))
 		}
 
 		mgr.lastPlanPIndexes = lastPlanPIndexes
@@ -920,9 +906,7 @@ func (mgr *Manager) GetPlanPIndexes(refresh bool) (
 		mgr.coveringCache = nil
 
 		if RegisteredPIndexCallbacks.OnRefresh != nil {
-			start := time.Now()
 			RegisteredPIndexCallbacks.OnRefresh()
-			log.Printf("manager: GetPlanPIndexes, PIndex OnRefresh took: %s", time.Since(start))
 		}
 	}
 
@@ -938,7 +922,7 @@ func (mgr *Manager) GetStableLocalPlanPIndexes() *PlanPIndexes {
 	// read the files from the planPIndexes directory.
 	files, err := ioutil.ReadDir(dirPath)
 	if err != nil {
-		log.Errorf("manager: GetStableLocalPlanPIndexes, readDir err: %v", err)
+		mgr.log.Errorf("manager: GetStableLocalPlanPIndexes, readDir err: %v", err)
 		return nil
 	}
 
@@ -952,14 +936,14 @@ func (mgr *Manager) GetStableLocalPlanPIndexes() *PlanPIndexes {
 		path := filepath.Join(dirPath, files[i].Name())
 		val, err := ioutil.ReadFile(path)
 		if err != nil {
-			log.Errorf("manager: GetStableLocalPlanPIndexes, readFile, err: %v", err)
+			mgr.log.Errorf("manager: GetStableLocalPlanPIndexes, readFile, err: %v", err)
 			// in case of a file read error, check for any subsequent plan files.
 			continue
 		}
 
 		contentMD5, err := computeMD5(val)
 		if err != nil {
-			log.Errorf("manager: GetStableLocalPlanPIndexes, computeMD5, err: %v", err)
+			mgr.log.Errorf("manager: GetStableLocalPlanPIndexes, computeMD5, err: %v", err)
 			// in case of a hash compute error, check for any subsequent plan files.
 			continue
 		}
@@ -968,7 +952,7 @@ func (mgr *Manager) GetStableLocalPlanPIndexes() *PlanPIndexes {
 		fname := files[i].Name()
 		nameMD5 := fname[strings.LastIndex(fname, "-")+1:]
 		if contentMD5 != nameMD5 {
-			log.Errorf("manager: GetStableLocalPlanPIndexes failed, hash mismatch "+
+			mgr.log.Errorf("manager: GetStableLocalPlanPIndexes failed, hash mismatch "+
 				"contentMD5: %s, contents: %s, path: %s", contentMD5, val, path)
 			// in case of a hash mis match, check for any subsequent plan files.
 			continue
@@ -978,7 +962,7 @@ func (mgr *Manager) GetStableLocalPlanPIndexes() *PlanPIndexes {
 		if err != nil {
 			// if the file is read successfully and hash digest matched then json
 			// parsing should have passed too. So return here.
-			log.Errorf("manager: GetStableLocalPlanPIndexes, json, err: %v", err)
+			mgr.log.Errorf("manager: GetStableLocalPlanPIndexes, json, err: %v", err)
 			return nil
 		}
 		log.Printf("manager: GetStableLocalPlanPIndexes, recovery plan: %s", val)
@@ -1029,7 +1013,7 @@ func (mgr *Manager) checkAndStoreStablePlanPIndexes(planPIndexes *PlanPIndexes) 
 	}
 	val, err := json.Marshal(planPIndexes)
 	if err != nil {
-		log.Errorf("manager: persistPlanPIndexes, json err: %v", err)
+		mgr.log.Errorf("manager: persistPlanPIndexes, json err: %v", err)
 		return
 	}
 	// Decorate the file name with the hash of the plan contents so that
@@ -1050,12 +1034,12 @@ func (mgr *Manager) checkAndStoreStablePlanPIndexes(planPIndexes *PlanPIndexes) 
 
 	err = os.MkdirAll(dirPath, 0700)
 	if err != nil {
-		log.Errorf("manager: persistPlanPIndexes,  MkdirAll failed, err: %v", err)
+		mgr.log.Errorf("manager: persistPlanPIndexes,  MkdirAll failed, err: %v", err)
 		return
 	}
 	err = ioutil.WriteFile(newPath, val, 0600)
 	if err != nil {
-		log.Errorf("manager: persistPlanPIndexes writeFile failed, err: %v", err)
+		mgr.log.Errorf("manager: persistPlanPIndexes writeFile failed, err: %v", err)
 		return
 	}
 
@@ -1066,7 +1050,7 @@ func (mgr *Manager) checkAndStoreStablePlanPIndexes(planPIndexes *PlanPIndexes) 
 	// ReadDir returns files in the sorted order of their timestamped names.
 	files, err := ioutil.ReadDir(dirPath)
 	if err != nil {
-		log.Errorf("manager: persistPlanPIndexes, readDir failed, err: %v", err)
+		mgr.log.Errorf("manager: persistPlanPIndexes, readDir failed, err: %v", err)
 		return
 	}
 	// No purging needs to be done for a single file on disk.
@@ -1084,7 +1068,7 @@ func (mgr *Manager) checkAndStoreStablePlanPIndexes(planPIndexes *PlanPIndexes) 
 		}
 		err := os.Remove(filepath.Join(dirPath, fname))
 		if err != nil {
-			log.Errorf("manager: persistPlanPIndexes, remove failed, err %v", err)
+			mgr.log.Errorf("manager: persistPlanPIndexes, remove failed, err %v", err)
 			continue
 		}
 	}
@@ -1224,13 +1208,11 @@ func (mgr *Manager) SetOptions(options map[string]string) error {
 		}
 	}
 	mgr.optionsMutex.Lock()
-	start := time.Now()
 	_, err := CfgSetClusterOptions(mgr.cfg, &mo, 0)
 	if err != nil {
 		mgr.optionsMutex.Unlock()
 		return err
 	}
-	log.Printf("manager: SetOptions, CfgSetClusterOptions took: %s", time.Since(start))
 	mgr.options = options
 	atomic.AddUint64(&mgr.stats.TotSetOptions, 1)
 	mgr.optionsMutex.Unlock()

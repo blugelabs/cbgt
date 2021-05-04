@@ -122,13 +122,13 @@ func RegisterFeedType(sourceType string, f *FeedType) {
 
 // ------------------------------------------------------------------------
 
-// DataSourcePartitions is a helper function that returns the data
+// dataSourcePartitions is a helper function that returns the data
 // source partitions for a named data source or feed type.
-func DataSourcePartitions(sourceType, sourceName, sourceUUID, sourceParams,
+func dataSourcePartitions(sourceType, sourceName, sourceUUID, sourceParams,
 	server string, options map[string]string) ([]string, error) {
 	feedType, exists := FeedTypes[sourceType]
 	if !exists || feedType == nil {
-		return nil, fmt.Errorf("feed: DataSourcePartitions"+
+		return nil, fmt.Errorf("feed: dataSourcePartitions"+
 			" unknown sourceType: %s", sourceType)
 	}
 
@@ -138,15 +138,15 @@ func DataSourcePartitions(sourceType, sourceName, sourceUUID, sourceParams,
 
 // ------------------------------------------------------------------------
 
-// DataSourcePrepParams parses and validates the sourceParams,
+// dataSourcePrepParams parses and validates the sourceParams,
 // possibly transforming it.  One transform is if the
 // "markPartitionSeqs" field in the sourceParams has a string value of
 // "currentPartitionSeqs", then the markPartitionSeqs will be
-// transformed into a map[string]UUIDSeq.  DataSourcePrepParams
+// transformed into a map[string]UUIDSeq.  dataSourcePrepParams
 // returns the transformed sourceParams.
-func DataSourcePrepParams(sourceType, sourceName, sourceUUID, sourceParams,
+func dataSourcePrepParams(sourceType, sourceName, sourceUUID, sourceParams,
 	server string, options map[string]string) (string, error) {
-	_, err := DataSourcePartitions(sourceType, sourceName, sourceUUID,
+	_, err := dataSourcePartitions(sourceType, sourceName, sourceUUID,
 		sourceParams, server, options)
 	if err != nil {
 		return "", err
@@ -158,7 +158,7 @@ func DataSourcePrepParams(sourceType, sourceName, sourceUUID, sourceParams,
 
 	feedType, exists := FeedTypes[sourceType]
 	if !exists || feedType == nil {
-		return "", fmt.Errorf("feed: DataSourcePrepParams"+
+		return "", fmt.Errorf("feed: dataSourcePrepParams"+
 			" unknown sourceType: %s", sourceType)
 	}
 
@@ -169,7 +169,7 @@ func DataSourcePrepParams(sourceType, sourceName, sourceUUID, sourceParams,
 	var sourceParamsMap map[string]interface{}
 	err = json.Unmarshal([]byte(sourceParams), &sourceParamsMap)
 	if err != nil {
-		return "", fmt.Errorf("feed: DataSourcePrepParams"+
+		return "", fmt.Errorf("feed: dataSourcePrepParams"+
 			" json parse sourceParams: %s, err: %v",
 			sourceParams, err)
 	}
@@ -183,7 +183,7 @@ func DataSourcePrepParams(sourceType, sourceName, sourceUUID, sourceParams,
 					sourceType, sourceName, sourceUUID,
 					sourceParams, server, options)
 				if err != nil {
-					return "", fmt.Errorf("feed: DataSourcePrepParams"+
+					return "", fmt.Errorf("feed: dataSourcePrepParams"+
 						" PartitionSeqs, err: %v", err)
 				}
 

@@ -18,8 +18,6 @@ import (
 	"io/ioutil"
 	"os"
 	"reflect"
-
-	log "github.com/blugelabs/cbgt/log"
 )
 
 func init() {
@@ -137,9 +135,9 @@ func (t *BlackHole) Stats(w io.Writer) error {
 	return err
 }
 
-func reloadableIndexDefParamChange(paramPrev, paramCur string) bool {
+func reloadableIndexDefParamChange(mgr *Manager, paramPrev, paramCur string) bool {
 	if paramPrev == paramCur {
-		log.Printf("reloadableSourceParamsChange returned true")
+		mgr.log.Printf("reloadableSourceParamsChange returned true")
 		return true
 	}
 
@@ -151,7 +149,7 @@ func reloadableIndexDefParamChange(paramPrev, paramCur string) bool {
 	var prevMap map[string]interface{}
 	err := json.Unmarshal([]byte(paramPrev), &prevMap)
 	if err != nil {
-		log.Printf("pindex_bleve: reloadableSourceParamsChange"+
+		mgr.log.Printf("pindex_bleve: reloadableSourceParamsChange"+
 			" json parse paramPrev: %s, err: %v",
 			paramPrev, err)
 		return false
@@ -165,7 +163,7 @@ func reloadableIndexDefParamChange(paramPrev, paramCur string) bool {
 	var curMap map[string]interface{}
 	err = json.Unmarshal([]byte(paramCur), &curMap)
 	if err != nil {
-		log.Printf("pindex_bleve: reloadableSourceParamsChange"+
+		mgr.log.Printf("pindex_bleve: reloadableSourceParamsChange"+
 			" json parse paramCur: %s, err: %v",
 			paramCur, err)
 		return false
@@ -182,7 +180,7 @@ func reloadableIndexDefParamChange(paramPrev, paramCur string) bool {
 	return reflect.DeepEqual(prevMap, curMap)
 }
 
-func reloadableSourceParamsChange(paramPrev, paramCur string) bool {
+func reloadableSourceParamsChange(mgr *Manager, paramPrev, paramCur string) bool {
 	if paramPrev == paramCur {
 		return true
 	}
@@ -190,7 +188,7 @@ func reloadableSourceParamsChange(paramPrev, paramCur string) bool {
 	var prevMap map[string]interface{}
 	err := json.Unmarshal([]byte(paramPrev), &prevMap)
 	if err != nil {
-		log.Printf("pindex_impl_blackhole: reloadableSourceParamsChange"+
+		mgr.log.Printf("pindex_impl_blackhole: reloadableSourceParamsChange"+
 			" json parse paramPrev: %s, err: %v",
 			paramPrev, err)
 		return false
@@ -199,7 +197,7 @@ func reloadableSourceParamsChange(paramPrev, paramCur string) bool {
 	var curMap map[string]interface{}
 	err = json.Unmarshal([]byte(paramCur), &curMap)
 	if err != nil {
-		log.Printf("pindex_impl_blackhole: reloadableSourceParamsChange"+
+		mgr.log.Printf("pindex_impl_blackhole: reloadableSourceParamsChange"+
 			" json parse paramCur: %s, err: %v",
 			paramCur, err)
 		return false
@@ -219,7 +217,7 @@ func reloadableSourceParamsChange(paramPrev, paramCur string) bool {
 // restartOnIndexDefChanges checks whether the changes in the indexDefns are
 // quickly adoptable over a reboot of the pindex implementations.
 // eg: kvstore configs updates like compaction percentage.
-func restartOnIndexDefChanges(
+func restartOnIndexDefChanges(mgr *Manager,
 	configRequest *ConfigAnalyzeRequest) ResultCode {
 	if configRequest == nil || configRequest.IndexDefnCur == nil ||
 		configRequest.IndexDefnPrev == nil {
@@ -232,13 +230,13 @@ func restartOnIndexDefChanges(
 			configRequest.IndexDefnCur.SourceType ||
 		configRequest.IndexDefnPrev.SourceUUID !=
 			configRequest.IndexDefnCur.SourceUUID ||
-		!reloadableSourceParamsChange(configRequest.IndexDefnPrev.SourceParams,
+		!reloadableSourceParamsChange(mgr, configRequest.IndexDefnPrev.SourceParams,
 			configRequest.IndexDefnCur.SourceParams) ||
 		configRequest.IndexDefnPrev.Type !=
 			configRequest.IndexDefnCur.Type ||
 		!reflect.DeepEqual(configRequest.SourcePartitionsCur,
 			configRequest.SourcePartitionsPrev) ||
-		!reloadableIndexDefParamChange(configRequest.IndexDefnPrev.Params,
+		!reloadableIndexDefParamChange(mgr, configRequest.IndexDefnPrev.Params,
 			configRequest.IndexDefnCur.Params) {
 		return ""
 	}

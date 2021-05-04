@@ -15,6 +15,7 @@ import (
 	"bytes"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"os"
 	"strconv"
@@ -23,8 +24,6 @@ import (
 	"testing"
 
 	"github.com/blugelabs/blance"
-
-	log "github.com/blugelabs/cbgt/log"
 
 	"github.com/blugelabs/cbgt"
 )
@@ -190,7 +189,8 @@ func TestRebalance(t *testing.T) {
 			}
 		}
 
-		r, err := StartRebalance(cbgt.Version, cfg, ".", nil,
+		l := cbgt.NewStdLibLog(os.Stderr, "", log.LstdFlags)
+		r, err := StartRebalance(cbgt.Version, cfg, l, ".", nil,
 			nodesToRemove,
 			RebalanceOptions{
 				HttpGet:       httpGet,
@@ -219,7 +219,7 @@ func TestRebalance(t *testing.T) {
 			if progress.Error != nil {
 				err = progress.Error
 
-				log.Warnf("saw progress error: %#v\n", progress)
+				t.Logf("saw progress error: %#v\n", progress)
 			}
 		}
 
@@ -251,7 +251,7 @@ func TestRebalance(t *testing.T) {
 		}
 
 		endIndexDefs, endNodeDefs, endPlanPIndexes, _, err :=
-			cbgt.PlannerGetPlan(cfg, cbgt.Version, "")
+			cbgt.PlannerGetPlan(l, cfg, cbgt.Version, "")
 		if err != nil {
 			t.Errorf("expected no err, got: %v", err)
 		}
@@ -436,9 +436,9 @@ func startNodeManager(testDir string, cfg cbgt.Cfg, node, register string,
 
 	meh := cbgt.ManagerEventHandlers(nil)
 
-	mgr = cbgt.NewManager(cbgt.Version, cfg, uuid,
+	mgr = cbgt.NewManager(cbgt.Version, cfg, nil, uuid,
 		tags, container, weight, extras,
-		bindHttp, dataDir, server, meh)
+		bindHttp, dataDir, server, meh, nil)
 
 	err = mgr.Start(register)
 	if err != nil {
@@ -630,7 +630,8 @@ func TestRebalanceStatsErrorCase(t *testing.T) {
 			errThreshold = 0
 		}
 
-		r, err := StartRebalance(cbgt.Version, cfg, ".", nil,
+		l := cbgt.NewStdLibLog(os.Stderr, "", log.LstdFlags)
+		r, err := StartRebalance(cbgt.Version, cfg, l, ".", nil,
 			nodesToRemove,
 			RebalanceOptions{
 				HttpGet:                   httpGet,
@@ -694,7 +695,7 @@ func TestRebalanceStatsErrorCase(t *testing.T) {
 		}
 
 		endIndexDefs, endNodeDefs, endPlanPIndexes, _, err :=
-			cbgt.PlannerGetPlan(cfg, cbgt.Version, "")
+			cbgt.PlannerGetPlan(l, cfg, cbgt.Version, "")
 		if err != nil {
 			t.Errorf("no err expected, got: %v", err)
 		}

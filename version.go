@@ -14,8 +14,6 @@ package cbgt
 import (
 	"encoding/json"
 	"fmt"
-
-	log "github.com/blugelabs/cbgt/log"
 )
 
 // The cbgt.Version tracks persistence versioning (schema/format of
@@ -35,7 +33,7 @@ const versionKey = "version"
 // Returns true if a given version is modern enough to modify the Cfg.
 // Older versions (which are running with older JSON/struct definitions
 // or planning algorithms) will see false from their checkVersion()'s.
-func checkVersion(cfg Cfg, myVersion string) (bool, error) {
+func checkVersion(log Log, cfg Cfg, myVersion string) (bool, error) {
 	tries := 0
 	for cfg != nil {
 		tries += 1
@@ -76,7 +74,7 @@ func checkVersion(cfg Cfg, myVersion string) (bool, error) {
 		}
 
 		if myVersion != string(clusterVersion) {
-			bumpVersion, err := VerifyEffectiveClusterVersion(cfg, myVersion)
+			bumpVersion, err := VerifyEffectiveClusterVersion(log, cfg, myVersion)
 			if err != nil {
 				return false, err
 			}
@@ -114,7 +112,7 @@ func checkVersion(cfg Cfg, myVersion string) (bool, error) {
 // VerifyEffectiveClusterVersion checks the cluster version values, and
 // if the cluster contains any node which is lower than the given
 // myVersion, then return false
-func VerifyEffectiveClusterVersion(cfg interface{}, myVersion string) (bool, error) {
+func VerifyEffectiveClusterVersion(log Log, cfg interface{}, myVersion string) (bool, error) {
 	// first check with the ns_server for clusterCompatibility value
 	// On any errors in retrieving the values there, fallback to
 	// nodeDefinitions level version checks

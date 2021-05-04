@@ -13,12 +13,10 @@ package cbgt
 
 import (
 	"fmt"
+	"log"
 	"regexp"
 	"strconv"
 	"sync/atomic"
-	"time"
-
-	log "github.com/blugelabs/cbgt/log"
 )
 
 // INDEX_NAME_REGEXP is used to validate index definition names.
@@ -98,7 +96,7 @@ func (mgr *Manager) CreateIndexEx(sourceType,
 	}
 
 	// First, check that the source exists.
-	sourceParams, err = DataSourcePrepParams(sourceType,
+	sourceParams, err = dataSourcePrepParams(sourceType,
 		sourceName, sourceUUID, sourceParams, mgr.server, mgr.Options())
 	if err != nil {
 		return "", fmt.Errorf("manager_api: failed to connect to"+
@@ -220,11 +218,11 @@ func (mgr *Manager) CreateIndexEx(sourceType,
 	}
 
 	if prevIndexUUID == "" {
-		log.Printf("manager_api: index definition created,"+
+		mgr.log.Printf("manager_api: index definition created,"+
 			" indexType: %s, indexName: %s, indexUUID: %s",
 			indexDef.Type, indexDef.Name, indexDef.UUID)
 	} else {
-		log.Printf("manager_api: index definition updated,"+
+		mgr.log.Printf("manager_api: index definition updated,"+
 			" indexType: %s, indexName: %s, indexUUID: %s, prevIndexUUID: %s",
 			indexDef.Type, indexDef.Name, indexDef.UUID, prevIndexUUID)
 	}
@@ -250,12 +248,10 @@ func (mgr *Manager) DeleteIndexEx(indexName, indexUUID string) (
 	atomic.AddUint64(&mgr.stats.TotDeleteIndex, 1)
 
 	mgr.m.Lock()
-	start := time.Now()
 	indexDefs, cas, err := CfgGetIndexDefs(mgr.cfg)
 	if err != nil {
 		return "", err
 	}
-	log.Printf("manager_api: DeleteIndexEx, CfgGetIndexDefs took: %s", time.Since(start))
 	if indexDefs == nil {
 		mgr.m.Unlock()
 		return "", fmt.Errorf("manager_api: no indexes on deletion"+
@@ -286,14 +282,12 @@ func (mgr *Manager) DeleteIndexEx(indexName, indexUUID string) (
 	// NOTE: if our ImplVersion is still too old due to a race, we
 	// expect a more modern planner to catch it later.
 
-	start = time.Now()
 	_, err = CfgSetIndexDefs(mgr.cfg, indexDefs, cas)
 	if err != nil {
 		mgr.m.Unlock()
 		return "", fmt.Errorf("manager_api: could not save indexDefs,"+
 			" err: %v", err)
 	}
-	log.Printf("manager_api: DeleteIndexEx, CfgSetIndexDefs took: %s", time.Since(start))
 
 	log.Printf("manager_api: index definition deleted,"+
 		" indexType: %s, indexName: %s, indexUUID: %s",
@@ -315,12 +309,10 @@ func (mgr *Manager) IndexControl(indexName, indexUUID, readOp, writeOp,
 	mgr.m.Lock()
 	defer mgr.m.Unlock()
 
-	start := time.Now()
 	indexDefs, cas, err := CfgGetIndexDefs(mgr.cfg)
 	if err != nil {
 		return err
 	}
-	log.Printf("manager_api: IndexControl, CfgGetIndexDefs took: %s", time.Since(start))
 	if indexDefs == nil {
 		return fmt.Errorf("manager_api: no indexes,"+
 			" index read/write control, indexName: %s", indexName)
@@ -385,13 +377,11 @@ func (mgr *Manager) IndexControl(indexName, indexUUID, readOp, writeOp,
 		indexDef.PlanParams.PlanFrozen = planFreezeOp == "freeze"
 	}
 
-	start = time.Now()
 	_, err = CfgSetIndexDefs(mgr.cfg, indexDefs, cas)
 	if err != nil {
 		return fmt.Errorf("manager_api: could not save indexDefs,"+
 			" err: %v", err)
 	}
-	log.Printf("manager_api: IndexControl, CfgSetIndexDefs took: %s", time.Since(start))
 
 	atomic.AddUint64(&mgr.stats.TotIndexControlOk, 1)
 	return nil
@@ -400,12 +390,10 @@ func (mgr *Manager) IndexControl(indexName, indexUUID, readOp, writeOp,
 // BumpIndexDefs bumps the uuid of the index defs, to force planners
 // and other downstream tasks to re-run.
 func (mgr *Manager) BumpIndexDefs(indexDefsUUID string) error {
-	start := time.Now()
 	indexDefs, cas, err := CfgGetIndexDefs(mgr.cfg)
 	if err != nil {
 		return err
 	}
-	log.Printf("manager_api: BumpIndexDefs, CfgGetIndexDefs took: %s", time.Since(start))
 	if indexDefs == nil {
 		return fmt.Errorf("manager_api: no indexDefs to bump")
 	}
@@ -424,13 +412,11 @@ func (mgr *Manager) BumpIndexDefs(indexDefsUUID string) error {
 	// NOTE: if our ImplVersion is still too old due to a race, we
 	// expect a more modern cbgt to do the work instead.
 
-	start = time.Now()
 	_, err = CfgSetIndexDefs(mgr.cfg, indexDefs, cas)
 	if err != nil {
 		return fmt.Errorf("manager_api: could not bump indexDefs,"+
 			" err: %v", err)
 	}
-	log.Printf("manager_api: BumpIndexDefs, CfgSetIndexDefs took: %s", time.Since(start))
 
 	log.Printf("manager_api: bumped indexDefs, indexDefsUUID: %s",
 		indexDefs.UUID)
@@ -444,13 +430,11 @@ func (mgr *Manager) DeleteAllIndexFromSource(
 	sourceType, sourceName, sourceUUID string) error {
 	mgr.m.Lock()
 
-	start := time.Now()
 	indexDefs, cas, err := CfgGetIndexDefs(mgr.cfg)
 	if err != nil {
 		mgr.m.Unlock()
 		return err
 	}
-	log.Printf("manager_api: DeleteAllIndexFromSource, CfgGetIndexDefs took: %s", time.Since(start))
 	if indexDefs == nil {
 		mgr.m.Unlock()
 		return fmt.Errorf("manager_api: DeleteAllIndexFromSource, no indexDefs")
@@ -489,9 +473,7 @@ func (mgr *Manager) DeleteAllIndexFromSource(
 	// update the index definitions
 	indexDefs.UUID = NewUUID()
 	indexDefs.ImplVersion = CfgGetVersion(mgr.cfg)
-	start = time.Now()
 	_, err = CfgSetIndexDefs(mgr.cfg, indexDefs, cas)
-	log.Printf("manager_api: DeleteAllIndexFromSource, CfgSetIndexDefs took: %s", time.Since(start))
 	mgr.m.Unlock()
 
 	if err != nil {

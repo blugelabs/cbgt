@@ -16,14 +16,13 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"math"
 	"os"
 	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
-
-	log "github.com/blugelabs/cbgt/log"
 )
 
 // FeedAllotmentOption is the manager option key used the specify how
@@ -84,7 +83,7 @@ func (mgr *Manager) JanitorLoop() {
 		case m := <-mgr.janitorCh:
 			atomic.AddUint64(&mgr.stats.TotJanitorOpStart, 1)
 
-			log.Printf("janitor: awakes, op: %v, msg: %s", m.op, m.msg)
+			mgr.log.Printf("janitor: awakes, op: %v, msg: %s", m.op, m.msg)
 
 			var err error
 
@@ -94,7 +93,7 @@ func (mgr *Manager) JanitorLoop() {
 				if err != nil {
 					// Keep looping as perhaps it's a transient issue.
 					// TODO: Perhaps need a rescheduled janitor kick.
-					log.Warnf("janitor: JanitorOnce, err: %v", err)
+					mgr.log.Warnf("janitor: JanitorOnce, err: %v", err)
 					atomic.AddUint64(&mgr.stats.TotJanitorKickErr, 1)
 				} else {
 					atomic.AddUint64(&mgr.stats.TotJanitorKickOk, 1)
@@ -326,7 +325,7 @@ func (mgr *Manager) pindexesRestart(
 	close(responseCh)
 	var errs []pindexRestartErr
 	for resp := range responseCh {
-		log.Warnf("janitor: restartPIndex err: %v", resp.err)
+		mgr.log.Warnf("janitor: restartPIndex err: %v", resp.err)
 		errs = append(errs, *resp)
 	}
 	return errs
@@ -399,7 +398,7 @@ func (mgr *Manager) JanitorOnce(reason string) error {
 	currFeeds, currPIndexes = mgr.CurrentMaps()
 
 	addFeeds, removeFeeds :=
-		CalcFeedsDelta(mgr.uuid, planPIndexes, currFeeds, currPIndexes,
+		CalcFeedsDelta(mgr.log, mgr.uuid, planPIndexes, currFeeds, currPIndexes,
 			feedAllotment)
 
 	log.Printf("janitor: feeds to remove: %d", len(removeFeeds))
@@ -409,7 +408,7 @@ func (mgr *Manager) JanitorOnce(reason string) error {
 	log.Printf("janitor: feeds to add: %d", len(addFeeds))
 	for _, targetPIndexes := range addFeeds {
 		if len(targetPIndexes) > 0 {
-			log.Printf("  %s", FeedNameForPIndex(targetPIndexes[0], feedAllotment))
+			log.Printf("  %s", FeedNameForPIndex(mgr.log, targetPIndexes[0], feedAllotment))
 		}
 	}
 
@@ -470,7 +469,7 @@ func classifyAddRemoveRestartPIndexes(mgr *Manager, addPlanPIndexes []*PlanPInde
 	// unless overridden
 	if v, ok := mgr.Options()["rebuildOnReplicaUpdate"]; !ok ||
 		v != "true" {
-		return advPIndexClassifier(indexPIndexMap, indexPlanPIndexMap)
+		return advPIndexClassifier(mgr, indexPIndexMap, indexPlanPIndexMap)
 	}
 
 	// take every pindex to remove and check the config change
@@ -495,7 +494,7 @@ func classifyAddRemoveRestartPIndexes(mgr *Manager, addPlanPIndexes []*PlanPInde
 					continue
 				}
 				if pindexImplType.AnalyzeIndexDefUpdates != nil &&
-					pindexImplType.AnalyzeIndexDefUpdates(configAnalyzeReq) ==
+					pindexImplType.AnalyzeIndexDefUpdates(mgr, configAnalyzeReq) ==
 						PINDEXES_RESTART {
 					pindexesToRestart = append(pindexesToRestart,
 						getPIndexesToRestart(pindexes, planPIndexes)...)
@@ -511,7 +510,7 @@ func classifyAddRemoveRestartPIndexes(mgr *Manager, addPlanPIndexes []*PlanPInde
 	return planPIndexesToAdd, pindexesToRemove, pindexesToRestart
 }
 
-func advPIndexClassifier(indexPIndexMap map[string][]*PIndex,
+func advPIndexClassifier(mgr *Manager, indexPIndexMap map[string][]*PIndex,
 	indexPlanPIndexMap map[string][]*PlanPIndex) (planPIndexesToAdd []*PlanPIndex,
 	pindexesToRemove []*PIndex, pindexesToRestart []*pindexRestartReq) {
 	pindexesToRestart = make([]*pindexRestartReq, 0)
@@ -559,7 +558,7 @@ func advPIndexClassifier(indexPIndexMap map[string][]*PIndex,
 					}
 					// restartable pindex found from plan
 					if pindexImplType.AnalyzeIndexDefUpdates != nil &&
-						pindexImplType.AnalyzeIndexDefUpdates(configAnalyzeReq) ==
+						pindexImplType.AnalyzeIndexDefUpdates(mgr, configAnalyzeReq) ==
 							PINDEXES_RESTART {
 						pindexesToRestart = append(pindexesToRestart,
 							newPIndexRestartReq(targetPlan, pindex))
@@ -808,7 +807,7 @@ func CalcPIndexesDelta(mgrUUID string,
 // which should be shut down.  An updated feed would appear on both
 // the removeFeeds and addFeeds outputs, which assumes the caller is
 // going to remove feeds before adding feeds.
-func CalcFeedsDelta(nodeUUID string, planPIndexes *PlanPIndexes,
+func CalcFeedsDelta(log Log, nodeUUID string, planPIndexes *PlanPIndexes,
 	currFeeds map[string]Feed, pindexes map[string]*PIndex,
 	feedAllotment string) (addFeeds [][]*PIndex, removeFeeds []Feed) {
 	// Group the writable pindexes by their feed names.  Non-writable
@@ -820,7 +819,7 @@ func CalcFeedsDelta(nodeUUID string, planPIndexes *PlanPIndexes,
 		planPIndex, exists := planPIndexes.PlanPIndexes[pindex.Name]
 		if exists && planPIndex != nil &&
 			PlanPIndexNodeCanWrite(planPIndex.Nodes[nodeUUID]) {
-			feedName := FeedNameForPIndex(pindex, feedAllotment)
+			feedName := FeedNameForPIndex(log, pindex, feedAllotment)
 			groupedPIndexes[feedName] =
 				append(groupedPIndexes[feedName], pindex)
 		}
@@ -894,7 +893,7 @@ func ParseFeedAllotmentOption(sourceParams string) (string, error) {
 	return "", err
 }
 
-func feedAllotmentOption(sourceParams string) string {
+func feedAllotmentOption(log Log, sourceParams string) string {
 	if len(sourceParams) > 0 {
 		sp, err := ParseFeedAllotmentOption(sourceParams)
 		if err != nil {
@@ -906,8 +905,8 @@ func feedAllotmentOption(sourceParams string) string {
 }
 
 // FeedNameForPIndex functionally computes the name of a feed given a pindex.
-func FeedNameForPIndex(pindex *PIndex, defaultFeedAllotment string) string {
-	feedAllotment := feedAllotmentOption(pindex.SourceParams)
+func FeedNameForPIndex(log Log, pindex *PIndex, defaultFeedAllotment string) string {
+	feedAllotment := feedAllotmentOption(log, pindex.SourceParams)
 	if feedAllotment == "" {
 		feedAllotment = defaultFeedAllotment
 	}
@@ -944,13 +943,13 @@ func (mgr *Manager) startPIndex(planPIndex *PlanPIndex) error {
 	if err == nil {
 		pindex, err = openPIndex(mgr, path)
 		if err != nil {
-			log.Errorf("janitor: startPIndex, openPIndex error,"+
+			mgr.log.Errorf("janitor: startPIndex, openPIndex error,"+
 				" cleaning up and trying NewPIndex,"+
 				" path: %s, err: %v", path, err)
 			os.RemoveAll(path)
 		} else {
 			if !PIndexMatchesPlan(pindex, planPIndex) {
-				log.Errorf("janitor: startPIndex, pindex does not match plan,"+
+				mgr.log.Errorf("janitor: startPIndex, pindex does not match plan,"+
 					" cleaning up and trying NewPIndex, path: %s, err: %v",
 					path, err)
 				pindex.Close(true)
@@ -1039,11 +1038,11 @@ func (mgr *Manager) startFeed(pindexes []*PIndex) error {
 	feedAllotment := mgr.GetOptions()[FeedAllotmentOption]
 
 	pindexFirst := pindexes[0]
-	feedName := FeedNameForPIndex(pindexFirst, feedAllotment)
+	feedName := FeedNameForPIndex(mgr.log, pindexFirst, feedAllotment)
 
 	dests := make(map[string]Dest)
 	for _, pindex := range pindexes {
-		if f := FeedNameForPIndex(pindex, feedAllotment); f != feedName {
+		if f := FeedNameForPIndex(mgr.log, pindex, feedAllotment); f != feedName {
 			return fmt.Errorf("janitor: unexpected feedName: %s != %s,"+
 				" pindex: %#v", f, feedName, pindex)
 		}

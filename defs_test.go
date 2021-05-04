@@ -13,6 +13,8 @@ package cbgt
 
 import (
 	"encoding/json"
+	"log"
+	"os"
 	"reflect"
 	"testing"
 )
@@ -249,9 +251,10 @@ func TestPIndexMatchesPlan(t *testing.T) {
 }
 
 func TestCfgGetHelpers(t *testing.T) {
+	l := NewStdLibLog(os.Stderr, "", log.LstdFlags)
 	errCfg := &ErrorOnlyCfg{}
 
-	if _, err := checkVersion(errCfg, "my-version"); err == nil {
+	if _, err := checkVersion(l, errCfg, "my-version"); err == nil {
 		t.Errorf("expected to fail with errCfg")
 	}
 	if _, _, err := CfgGetIndexDefs(errCfg); err == nil {

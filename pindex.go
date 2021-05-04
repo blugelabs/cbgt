@@ -15,12 +15,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"math"
 	"os"
 	"strings"
 	"sync"
-
-	log "github.com/blugelabs/cbgt/log"
 )
 
 const PINDEX_META_FILENAME string = "PINDEX_META"
@@ -49,6 +48,8 @@ type PIndex struct {
 
 	m      sync.Mutex
 	closed bool
+
+	mgr *Manager
 }
 
 // Note that these callbacks are invoked within the manager's sync mutex
@@ -78,7 +79,7 @@ func (p *PIndex) Close(remove bool) error {
 	if p.Dest != nil {
 		err := p.Dest.Close()
 		if err != nil {
-			log.Errorf("pindex: %s Close failed, err: %v", p.Name, err)
+			p.mgr.log.Errorf("pindex: %s Close failed, err: %v", p.Name, err)
 			return err
 		}
 	}
@@ -112,6 +113,7 @@ func (p *PIndex) Clone() *PIndex {
 			Impl:                p.Impl,
 			Dest:                p.Dest,
 			closed:              p.closed,
+			mgr:                 p.mgr,
 		}
 		p.m.Unlock()
 		return pi
@@ -172,6 +174,7 @@ func NewPIndex(mgr *Manager, name, uuid,
 		Path:             path,
 		Impl:             impl,
 		Dest:             dest,
+		mgr:              mgr,
 	}
 	pindex.sourcePartitionsMap = map[string]bool{}
 	for _, partition := range strings.Split(sourcePartitions, ",") {
@@ -241,6 +244,7 @@ func openPIndex(mgr *Manager, path string) (pindex *PIndex, err error) {
 	pindex.Path = path
 	pindex.Impl = impl
 	pindex.Dest = dest
+	pindex.mgr = mgr
 
 	pindex.sourcePartitionsMap = map[string]bool{}
 	for _, partition := range strings.Split(pindex.SourcePartitions, ",") {

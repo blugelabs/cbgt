@@ -15,6 +15,7 @@ import (
 	"bytes"
 	"hash/crc32"
 	"io/ioutil"
+	"log"
 	"os"
 	"sort"
 	"testing"
@@ -224,9 +225,9 @@ func TestFilesFeedPartitions(t *testing.T) {
 func TestFilesFeedDisabled(t *testing.T) {
 	params := ""
 	dests := map[string]Dest{}
-
+	l := NewStdLibLog(os.Stderr, "", log.LstdFlags)
 	ff, err := NewFilesFeed(nil, "name", "indexName", "sourceName",
-		params, dests, true)
+		params, dests, true, l)
 	if err != nil {
 		t.Errorf("expected no err, err: %v", err)
 	}
@@ -259,8 +260,9 @@ func TestNewFilesFeed(t *testing.T) {
 	params := ""
 	dests := map[string]Dest{}
 
+	l := NewStdLibLog(os.Stderr, "", log.LstdFlags)
 	ff, err := NewFilesFeed(nil, "name", "indexName", "sourceName",
-		params, dests, false)
+		params, dests, false, l)
 	if err != nil {
 		t.Errorf("expected no err, err: %v", err)
 	}
@@ -269,19 +271,19 @@ func TestNewFilesFeed(t *testing.T) {
 	}
 
 	ff, err = NewFilesFeed(nil, "name", "indexName", "sourceName",
-		`}bogus{json`, dests, false)
+		`}bogus{json`, dests, false, l)
 	if err == nil || ff != nil {
 		t.Errorf("expected err on bogus json")
 	}
 
 	ff, err = NewFilesFeed(nil, "name", "indexName", "",
-		params, dests, false)
+		params, dests, false, l)
 	if err == nil || ff != nil {
 		t.Errorf("expected err on empty source name")
 	}
 
 	ff, err = NewFilesFeed(nil, "name", "indexName", "../../../etc/psswd",
-		params, dests, false)
+		params, dests, false, l)
 	if err == nil || ff != nil {
 		t.Errorf("expected err on bad source name")
 	}
@@ -296,7 +298,7 @@ func TestStartFilesFeed(t *testing.T) {
 
 	cfg := NewCfgMem()
 	meh := &TestMEH{}
-	mgr := NewManager(Version, cfg, NewUUID(), nil,
+	mgr := NewManager(Version, cfg, nil, NewUUID(), nil,
 		"", 1, "", ":1000", emptyDir, "some-datasource", meh, nil)
 	err := mgr.Start("wanted")
 	if err != nil {

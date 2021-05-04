@@ -12,17 +12,20 @@
 package cbgt
 
 import (
+	"log"
+	"os"
 	"testing"
 )
 
 func TestCheckVersion(t *testing.T) {
-	ok, err := checkVersion(nil, "1.1.0")
+	l := NewStdLibLog(os.Stderr, "", log.LstdFlags)
+	ok, err := checkVersion(l, nil, "1.1.0")
 	if err != nil || ok {
 		t.Errorf("expect nil err and not ok on nil cfg")
 	}
 
 	cfg := NewCfgMem()
-	ok, err = checkVersion(cfg, "1.0.0")
+	ok, err = checkVersion(l, cfg, "1.0.0")
 	if err != nil || !ok {
 		t.Errorf("expected first version to win in brand new cfg")
 	}
@@ -30,7 +33,7 @@ func TestCheckVersion(t *testing.T) {
 	if err != nil || string(v) != "1.0.0" {
 		t.Errorf("expected first version to persist in brand new cfg")
 	}
-	ok, err = checkVersion(cfg, "1.1.0")
+	ok, err = checkVersion(l, cfg, "1.1.0")
 	if err != nil || !ok {
 		t.Errorf("expected upgrade version to win")
 	}
@@ -38,7 +41,7 @@ func TestCheckVersion(t *testing.T) {
 	if err != nil || string(v) != "1.1.0" {
 		t.Errorf("expected upgrade version to persist in brand new cfg")
 	}
-	ok, err = checkVersion(cfg, "1.0.0")
+	ok, err = checkVersion(l, cfg, "1.0.0")
 	if err != nil || ok {
 		t.Errorf("expected lower version to lose")
 	}
@@ -53,7 +56,7 @@ func TestCheckVersion(t *testing.T) {
 			inner:    cfg,
 			errAfter: i,
 		}
-		ok, err = checkVersion(eac, "1.0.0")
+		ok, err = checkVersion(l, eac, "1.0.0")
 		if err == nil || ok {
 			t.Errorf("expected err when cfg errors on %d'th op", i)
 		}
@@ -64,7 +67,7 @@ func TestCheckVersion(t *testing.T) {
 		inner:    cfg,
 		errAfter: 3,
 	}
-	ok, err = checkVersion(eac, "1.0.0")
+	ok, err = checkVersion(l, eac, "1.0.0")
 	if err != nil || !ok {
 		t.Errorf("expected ok when cfg doesn't error until 3rd op ")
 	}
@@ -74,19 +77,20 @@ func TestCheckVersion(t *testing.T) {
 		inner:    cfg,
 		errAfter: 4,
 	}
-	ok, err = checkVersion(eac, "1.0.0")
+	ok, err = checkVersion(l, eac, "1.0.0")
 	if err != nil || !ok {
 		t.Errorf("expected ok on first version init")
 	}
-	ok, err = checkVersion(eac, "1.1.0")
+	ok, err = checkVersion(l, eac, "1.1.0")
 	if err == nil || ok {
 		t.Errorf("expected err when forcing cfg Set() error during version upgrade")
 	}
 }
 
 func TestCheckVersionForUpgrades(t *testing.T) {
+	l := NewStdLibLog(os.Stderr, "", log.LstdFlags)
 	cfg := NewCfgMem()
-	ok, err := checkVersion(cfg, "5.0.0")
+	ok, err := checkVersion(l, cfg, "5.0.0")
 	if err != nil || !ok {
 		t.Errorf("expected first version to win in brand new cfg")
 	}
@@ -97,7 +101,7 @@ func TestCheckVersionForUpgrades(t *testing.T) {
 	}
 
 	// expect to fail as given lower version
-	ok, err = checkVersion(cfg, "4.5.0")
+	ok, err = checkVersion(l, cfg, "4.5.0")
 	if err != nil || ok {
 		t.Errorf("expected original version to win against given lower versions, err: %+v", err)
 	}
@@ -129,7 +133,7 @@ func TestCheckVersionForUpgrades(t *testing.T) {
 	}
 
 	// expected to pass though version bumping not happened with higher version 5.5.0
-	ok, err = checkVersion(cfg, "5.5.0")
+	ok, err = checkVersion(l, cfg, "5.5.0")
 	if err != nil || !ok {
 		t.Errorf("expected original version to win until all nodes are on given version, err: %+v", err)
 	}
@@ -166,7 +170,7 @@ func TestCheckVersionForUpgrades(t *testing.T) {
 	}
 
 	// expected to pass as all nodes are on same version 5.5.0
-	ok, err = checkVersion(cfg, "5.5.0")
+	ok, err = checkVersion(l, cfg, "5.5.0")
 	if err != nil || !ok {
 		t.Errorf("expected given version to win as all nodes are on given version, err: %+v", err)
 	}
@@ -178,7 +182,7 @@ func TestCheckVersionForUpgrades(t *testing.T) {
 	}
 
 	// expected to pass though version bumping not happened with higher 5.5.5 version
-	ok, err = checkVersion(cfg, "5.5.5")
+	ok, err = checkVersion(l, cfg, "5.5.5")
 	if err != nil || !ok {
 		t.Errorf("expected original version to win until all nodes are on given version, err: %+v", err)
 	}
@@ -210,13 +214,13 @@ func TestCheckVersionForUpgrades(t *testing.T) {
 	}
 
 	// expected to pass though version bumping not happened with higher 5.5.5 version
-	ok, err = checkVersion(cfg, "5.5.5")
+	ok, err = checkVersion(l, cfg, "5.5.5")
 	if err != nil || !ok {
 		t.Errorf("expected original version to win until all nodes are on given version, err: %+v", err)
 	}
 
 	// expected to pass with the same version as that of current
-	ok, err = checkVersion(cfg, "5.5.0")
+	ok, err = checkVersion(l, cfg, "5.5.0")
 	if err != nil || !ok {
 		t.Errorf("expected given version to win as few nodes are on given version, err: %+v", err)
 	}
@@ -254,13 +258,13 @@ func TestCheckVersionForUpgrades(t *testing.T) {
 	}
 
 	// expected to pass as all nodes are on same version 5.5.5
-	ok, err = checkVersion(cfg, "5.5.5")
+	ok, err = checkVersion(l, cfg, "5.5.5")
 	if err != nil || !ok {
 		t.Errorf("expected given version to win as all nodes are on given version, err: %+v", err)
 	}
 
 	// expected to pass though no version bumping required with higher version
-	ok, err = checkVersion(cfg, "5.5.9")
+	ok, err = checkVersion(l, cfg, "5.5.9")
 	if err != nil || !ok {
 		t.Errorf("expected given version to fail until all nodes are on given version, err: %+v", err)
 	}
@@ -274,13 +278,14 @@ func TestCheckVersionForUpgrades(t *testing.T) {
 }
 
 func TestVerifyEffectiveClusterVersion(t *testing.T) {
+	l := NewStdLibLog(os.Stderr, "", log.LstdFlags)
 	cfg := NewCfgMem()
 	eac := &ErrorUntilCfg{
 		inner:    cfg,
 		errUntil: 2,
 	}
 
-	rv, err := VerifyEffectiveClusterVersion(eac, CfgAppVersion)
+	rv, err := VerifyEffectiveClusterVersion(l, eac, CfgAppVersion)
 	if err != nil {
 		t.Errorf("expected no err: %v", err)
 	}

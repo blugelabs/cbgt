@@ -109,7 +109,7 @@ type PIndexImplType struct {
 
 	// Optional, invoked for checking whether the pindex implementations
 	// can effect the config changes through a restart of pindexes.
-	AnalyzeIndexDefUpdates func(configUpdates *ConfigAnalyzeRequest) ResultCode
+	AnalyzeIndexDefUpdates func(mgr *Manager, configUpdates *ConfigAnalyzeRequest) ResultCode
 
 	// Invoked by the manager when it wants to trigger generic operations
 	// on the index.

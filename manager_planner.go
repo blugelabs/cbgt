@@ -15,12 +15,12 @@ import (
 	"fmt"
 	"hash/crc32"
 	"io"
+	"log"
 	"sort"
 	"strings"
 	"sync/atomic"
 
 	"github.com/blugelabs/blance"
-	log "github.com/blugelabs/cbgt/log"
 )
 
 // PlannerHooks allows advanced applications to register callbacks
@@ -123,7 +123,7 @@ func (mgr *Manager) PlannerLoop() {
 		case m := <-mgr.plannerCh:
 			atomic.AddUint64(&mgr.stats.TotPlannerOpStart, 1)
 
-			log.Printf("planner: awakes, op: %v, msg: %s", m.op, m.msg)
+			mgr.log.Printf("planner: awakes, op: %v, msg: %s", m.op, m.msg)
 
 			var err error
 
@@ -131,7 +131,7 @@ func (mgr *Manager) PlannerLoop() {
 				atomic.AddUint64(&mgr.stats.TotPlannerKickStart, 1)
 				changed, err2 := mgr.PlannerOnce(m.msg)
 				if err2 != nil {
-					log.Warnf("planner: PlannerOnce, err: %v", err2)
+					mgr.log.Warnf("planner: PlannerOnce, err: %v", err2)
 					atomic.AddUint64(&mgr.stats.TotPlannerKickErr, 1)
 					// Keep looping as perhaps it's a transient issue.
 				} else {
@@ -171,7 +171,7 @@ func (mgr *Manager) PlannerOnce(reason string) (bool, error) {
 		return false, fmt.Errorf("planner: skipped due to nil cfg")
 	}
 
-	return Plan(mgr.cfg, mgr.version, mgr.uuid, mgr.server,
+	return Plan(mgr.log, mgr.cfg, mgr.version, mgr.uuid, mgr.server,
 		mgr.Options(), nil)
 }
 
@@ -182,10 +182,10 @@ type PlannerFilter func(indexDef *IndexDef,
 	planPIndexesPrev, planPIndexes *PlanPIndexes) bool
 
 // Plan runs the planner once.
-func Plan(cfg Cfg, version, uuid, server string, options map[string]string,
+func Plan(log Log, cfg Cfg, version, uuid, server string, options map[string]string,
 	plannerFilter PlannerFilter) (bool, error) {
 	indexDefs, nodeDefs, planPIndexesPrev, cas, err :=
-		PlannerGetPlan(cfg, version, uuid)
+		PlannerGetPlan(log, cfg, version, uuid)
 	if err != nil {
 		return false, err
 	}
@@ -198,7 +198,7 @@ func Plan(cfg Cfg, version, uuid, server string, options map[string]string,
 		version = eVersion
 	}
 
-	planPIndexes, err := CalcPlan("", indexDefs, nodeDefs,
+	planPIndexes, err := CalcPlan(log, "", indexDefs, nodeDefs,
 		planPIndexesPrev, version, server, options, plannerFilter)
 	if err != nil {
 		return false, fmt.Errorf("planner: CalcPlan, err: %v", err)
@@ -219,14 +219,14 @@ func Plan(cfg Cfg, version, uuid, server string, options map[string]string,
 }
 
 // PlannerGetPlan retrieves plan related info from the Cfg.
-func PlannerGetPlan(cfg Cfg, version string, uuid string) (
+func PlannerGetPlan(log Log, cfg Cfg, version string, uuid string) (
 	indexDefs *IndexDefs,
 	nodeDefs *NodeDefs,
 	planPIndexes *PlanPIndexes,
 	planPIndexesCAS uint64,
 	err error) {
 	// use the incoming version for a potential version bump
-	err = PlannerCheckVersion(cfg, version)
+	err = PlannerCheckVersion(log, cfg, version)
 	if err != nil {
 		return nil, nil, nil, 0, err
 	}
@@ -250,8 +250,8 @@ func PlannerGetPlan(cfg Cfg, version string, uuid string) (
 }
 
 // PlannerCheckVersion errors if a version string is too low.
-func PlannerCheckVersion(cfg Cfg, version string) error {
-	ok, err := checkVersion(cfg, version)
+func PlannerCheckVersion(log Log, cfg Cfg, version string) error {
+	ok, err := checkVersion(log, cfg, version)
 	if err != nil {
 		return fmt.Errorf("planner: checkVersion err: %v", err)
 	}
@@ -344,7 +344,7 @@ func PlannerGetPlanPIndexes(cfg Cfg, version string) (
 // Split logical indexes into PIndexes and assign PIndexes to nodes.
 // As part of this, planner hook callbacks will be invoked to allow
 // advanced applications to adjust the planning outcome.
-func CalcPlan(mode string, indexDefs *IndexDefs, nodeDefs *NodeDefs,
+func CalcPlan(log Log, mode string, indexDefs *IndexDefs, nodeDefs *NodeDefs,
 	planPIndexesPrev *PlanPIndexes, version, server string,
 	options map[string]string, plannerFilter PlannerFilter) (
 	*PlanPIndexes, error) {
@@ -590,7 +590,7 @@ func SplitIndexDefIntoPlanPIndexes(indexDef *IndexDef, server string,
 	map[string]*PlanPIndex, error) {
 	maxPartitionsPerPIndex := indexDef.PlanParams.MaxPartitionsPerPIndex
 
-	sourcePartitionsArr, err := DataSourcePartitions(indexDef.SourceType,
+	sourcePartitionsArr, err := dataSourcePartitions(indexDef.SourceType,
 		indexDef.SourceName, indexDef.SourceUUID, indexDef.SourceParams,
 		server, options)
 	if err != nil {

@@ -18,6 +18,7 @@ import (
 	"hash/crc32"
 	"io"
 	"io/ioutil"
+	"log"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -25,13 +26,11 @@ import (
 	"strings"
 	"sync"
 	"time"
-
-	log "github.com/blugelabs/cbgt/log"
 )
 
-const FILES_FEED_SLEEP_START_MS = 5000
-const FILES_FEED_BACKOFF_FACTOR = 1.5
-const FILES_FEED_MAX_SLEEP_MS = 1000 * 60 * 5 // 5 minutes.
+const filesFeedSleepStartMS = 5000
+const filesFeedBackoffFactor = 1.5
+const filesFeedMaxSleepMS = 1000 * 60 * 5 // 5 minutes.
 
 func init() {
 	RegisterFeedType("files", &FeedType{
@@ -42,9 +41,9 @@ func init() {
 			" - files under a dataDir subdirectory tree will be the data source",
 		StartSample: &FilesFeedParams{
 			RegExps:       []string{".txt$", ".md$"},
-			SleepStartMS:  FILES_FEED_SLEEP_START_MS,
-			BackoffFactor: FILES_FEED_BACKOFF_FACTOR,
-			MaxSleepMS:    FILES_FEED_MAX_SLEEP_MS,
+			SleepStartMS:  filesFeedSleepStartMS,
+			BackoffFactor: filesFeedBackoffFactor,
+			MaxSleepMS:    filesFeedMaxSleepMS,
 		},
 	})
 }
@@ -81,6 +80,8 @@ type FilesFeed struct {
 
 	m       sync.Mutex
 	closeCh chan struct{}
+
+	log Log
 }
 
 // FilesFeedParams represents the JSON expected as the sourceParams
@@ -94,9 +95,9 @@ type FilesFeedParams struct {
 	MaxSleepMS    int      `json:"maxSleepMS"`
 }
 
-// FileDoc represents the JSON for each file/document that will be
+// fileDoc represents the JSON for each file/document that will be
 // emitted by a FilesFeed as a data source.
-type FileDoc struct {
+type fileDoc struct {
 	Name     string `json:"name"`
 	Path     string `json:"path"` // Path relative to the source name.
 	Contents string `json:"contents"`
@@ -107,8 +108,12 @@ type FileDoc struct {
 func StartFilesFeed(mgr *Manager, feedName, indexName, indexUUID,
 	sourceType, sourceName, sourceUUID, params string,
 	dests map[string]Dest) error {
+	var log Log
+	if mgr != nil {
+		log = mgr.log
+	}
 	feed, err := NewFilesFeed(mgr, feedName, indexName, sourceName,
-		params, dests, mgr.tagsMap != nil && !mgr.tagsMap["feed"])
+		params, dests, mgr.tagsMap != nil && !mgr.tagsMap["feed"], log)
 	if err != nil {
 		return fmt.Errorf("feed_files: NewFilesFeed,"+
 			" feedName: %s, err: %v", feedName, err)
@@ -128,8 +133,13 @@ func StartFilesFeed(mgr *Manager, feedName, indexName, indexUUID,
 
 // NewFilesFeed creates a ready-to-be-started FilesFeed.
 func NewFilesFeed(mgr *Manager, name, indexName, sourceName,
-	paramsStr string, dests map[string]Dest, disable bool) (
+	paramsStr string, dests map[string]Dest, disable bool, log Log) (
 	*FilesFeed, error) {
+
+	if log != nil {
+		log.Printf("new files feed, dests: %#v", dests)
+	}
+
 	if sourceName == "" {
 		return nil, fmt.Errorf("feed_files: missing source name")
 	}
@@ -156,6 +166,7 @@ func NewFilesFeed(mgr *Manager, name, indexName, sourceName,
 		dests:      dests,
 		disable:    disable,
 		closeCh:    make(chan struct{}),
+		log:        log,
 	}, nil
 }
 
@@ -175,17 +186,17 @@ func (t *FilesFeed) Start() error {
 
 	startSleepMS := t.params.SleepStartMS
 	if startSleepMS <= 0 {
-		startSleepMS = FILES_FEED_SLEEP_START_MS
+		startSleepMS = filesFeedSleepStartMS
 	}
 
 	backoffFactor := t.params.BackoffFactor
 	if backoffFactor <= 0 {
-		backoffFactor = FILES_FEED_BACKOFF_FACTOR
+		backoffFactor = filesFeedBackoffFactor
 	}
 
 	maxSleepMS := t.params.MaxSleepMS
 	if maxSleepMS <= 0 {
-		maxSleepMS = FILES_FEED_MAX_SLEEP_MS
+		maxSleepMS = filesFeedMaxSleepMS
 	}
 
 	numPartitions := t.params.NumPartitions
@@ -235,7 +246,7 @@ func (t *FilesFeed) Start() error {
 					t.sourceName, t.params.RegExps, prevStartTime,
 					t.params.MaxFileSize)
 				if err != nil {
-					log.Warnf("feed_files, FilesFindMatches, err: %v", err)
+					t.log.Warnf("feed_files, FilesFindMatches, err: %v", err)
 					return -1
 				}
 
@@ -286,19 +297,19 @@ func (t *FilesFeed) Start() error {
 
 					buf, err := ioutil.ReadFile(path)
 					if err != nil {
-						log.Warnf("feed_files: read file,"+
+						t.log.Warnf("feed_files: read file,"+
 							" name: %s, path: %s, err: %v",
 							t.Name(), path, err)
 						continue
 					}
 
-					jbuf, err := json.Marshal(FileDoc{
+					jbuf, err := json.Marshal(fileDoc{
 						Name:     filepath.Base(path),
 						Path:     path,
 						Contents: string(buf),
 					})
 					if err != nil {
-						log.Warnf("feed_files: json marshal file,"+
+						t.mgr.log.Warnf("feed_files: json marshal file,"+
 							" name: %s, path: %s, err: %v",
 							t.Name(), path, err)
 						continue
@@ -308,7 +319,7 @@ func (t *FilesFeed) Start() error {
 						err = dest.SnapshotStart(partition, seqCur,
 							seqEnds[partition])
 						if err != nil {
-							log.Warnf("feed_files: SnapshotStart,"+
+							t.mgr.log.Warnf("feed_files: SnapshotStart,"+
 								" name: %s, partition: %s, seqCur: %d,"+
 								" seqEnd: %d, err: %v", t.Name(), partition,
 								seqCur, seqEnds[partition], err)
@@ -323,7 +334,7 @@ func (t *FilesFeed) Start() error {
 					err = dest.DataUpdate(partition, pathBuf, seqCur,
 						jbuf, 0, DEST_EXTRAS_TYPE_NIL, nil)
 					if err != nil {
-						log.Warnf("feed_files: DataUpdate,"+
+						t.mgr.log.Warnf("feed_files: DataUpdate,"+
 							" name: %s, path: %s, partition: %s,"+
 							" seqCur: %d, err: %v", t.Name(), path,
 							partition, seqCur, err)

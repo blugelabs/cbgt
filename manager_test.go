@@ -14,6 +14,7 @@ package cbgt
 import (
 	"fmt"
 	"io/ioutil"
+	"log"
 	"os"
 	"reflect"
 	"testing"
@@ -48,7 +49,7 @@ func (meh *TestMEH) OnFeedError(srcType string, r Feed,
 }
 
 func TestPIndexPath(t *testing.T) {
-	m := NewManager(Version, nil, NewUUID(), nil,
+	m := NewManager(Version, nil, nil, NewUUID(), nil,
 		"", 1, "", "", "dir", "svr", nil, nil)
 	p := m.PIndexPath("x")
 	expected :=
@@ -79,7 +80,7 @@ func TestPIndexPath(t *testing.T) {
 }
 
 func TestManagerStart(t *testing.T) {
-	m := NewManager(Version, nil, NewUUID(), nil,
+	m := NewManager(Version, nil, nil, NewUUID(), nil,
 		"", 1, "", "", "dir", "not-a-real-svr", nil, nil)
 	if m.Start("") == nil {
 		t.Errorf("expected NewManager() with bad svr should fail")
@@ -89,7 +90,7 @@ func TestManagerStart(t *testing.T) {
 	}
 	m.Stop()
 
-	m = NewManager(Version, nil, NewUUID(), nil,
+	m = NewManager(Version, nil, nil, NewUUID(), nil,
 		"", 1, "", "", "not-a-real-dir", "", nil, nil)
 	if m.Start("") == nil {
 		t.Errorf("expected NewManager() with bad dir should fail")
@@ -102,7 +103,7 @@ func TestManagerStart(t *testing.T) {
 	emptyDir, _ := ioutil.TempDir("./tmp", "test")
 	defer os.RemoveAll(emptyDir)
 
-	m = NewManager(Version, nil, NewUUID(), nil,
+	m = NewManager(Version, nil, nil, NewUUID(), nil,
 		"", 1, "", "", emptyDir, "", nil, nil)
 	if err := m.Start(""); err != nil {
 		t.Errorf("expected NewManager() with empty dir to work,"+
@@ -110,7 +111,7 @@ func TestManagerStart(t *testing.T) {
 	}
 
 	cfg := NewCfgMem()
-	m = NewManager(Version, cfg, NewUUID(),
+	m = NewManager(Version, cfg, nil, NewUUID(),
 		nil, "", 1, "", ":1000", emptyDir, "some-datasource", nil, nil)
 	if err := m.Start("known"); err != nil {
 		t.Errorf("expected Manager.Start() to work, err: %v", err)
@@ -126,7 +127,7 @@ func TestManagerStart(t *testing.T) {
 	m.Stop()
 
 	cfg = NewCfgMem()
-	m = NewManager(Version, cfg, NewUUID(),
+	m = NewManager(Version, cfg, nil, NewUUID(),
 		nil, "", 1, "", ":1000", emptyDir,
 		"some-datasource", nil, nil)
 	if err = m.Start("wanted"); err != nil {
@@ -154,7 +155,7 @@ func TestManagerRestart(t *testing.T) {
 		t.Error("expected pit for uncreated foo index")
 	}
 
-	m := NewManager(Version, cfg, NewUUID(), nil, "", 1, "", ":1000",
+	m := NewManager(Version, cfg, nil, NewUUID(), nil, "", 1, "", ":1000",
 		emptyDir, "some-datasource", nil, nil)
 	if err = m.Start("wanted"); err != nil {
 		t.Errorf("expected Manager.Start() to work, err: %v", err)
@@ -188,7 +189,7 @@ func TestManagerRestart(t *testing.T) {
 		}
 	}
 
-	m2 := NewManager(Version, cfg, NewUUID(), nil, "", 1, "", ":1000",
+	m2 := NewManager(Version, cfg, nil, NewUUID(), nil, "", 1, "", ":1000",
 		emptyDir, "some-datasource", nil, nil)
 	m2.uuid = m.uuid
 	if err = m2.Start("wanted"); err != nil {
@@ -225,7 +226,7 @@ func TestManagerCreateDeleteIndex(t *testing.T) {
 	defer os.RemoveAll(emptyDir)
 
 	cfg := NewCfgMem()
-	m := NewManager(Version, cfg, NewUUID(), nil, "", 1, "", ":1000",
+	m := NewManager(Version, cfg, nil, NewUUID(), nil, "", 1, "", ":1000",
 		emptyDir, "some-datasource", nil, nil)
 	if err := m.Start("wanted"); err != nil {
 		t.Errorf("expected Manager.Start() to work, err: %v", err)
@@ -270,7 +271,7 @@ func TestManagerDeleteAllIndex(t *testing.T) {
 	defer os.RemoveAll(emptyDir)
 
 	cfg := NewCfgMem()
-	m := NewManager(Version, cfg, NewUUID(), nil, "", 1, "", ":1000",
+	m := NewManager(Version, cfg, nil, NewUUID(), nil, "", 1, "", ":1000",
 		emptyDir, "some-datasource", nil, nil)
 	if err := m.Start("wanted"); err != nil {
 		t.Errorf("expected Manager.Start() to work, err: %v", err)
@@ -311,7 +312,7 @@ func TestManagerRegisterPIndex(t *testing.T) {
 	emptyDir, _ := ioutil.TempDir("./tmp", "test")
 	defer os.RemoveAll(emptyDir)
 	meh := &TestMEH{}
-	m := NewManager(Version, nil, NewUUID(), nil, "", 1, "", "",
+	m := NewManager(Version, nil, nil, NewUUID(), nil, "", 1, "", "",
 		emptyDir, "", meh, nil)
 	if meh.lastPIndex != nil || meh.lastCall != "" {
 		t.Errorf("expected no callback events to meh")
@@ -409,7 +410,7 @@ func TestManagerRegisterFeed(t *testing.T) {
 	emptyDir, _ := ioutil.TempDir("./tmp", "test")
 	defer os.RemoveAll(emptyDir)
 	meh := &TestMEH{}
-	m := NewManager(Version, nil, NewUUID(),
+	m := NewManager(Version, nil, nil, NewUUID(),
 		nil, "", 1, "", "", emptyDir, "", meh, nil)
 	if meh.lastPIndex != nil || meh.lastCall != "" {
 		t.Errorf("expected no callback events to meh")
@@ -496,7 +497,7 @@ func TestManagerStartNILFeed(t *testing.T) {
 	defer os.RemoveAll(emptyDir)
 
 	cfg := NewCfgMem()
-	mgr := NewManager(Version, cfg, NewUUID(),
+	mgr := NewManager(Version, cfg, nil, NewUUID(),
 		nil, "", 1, "", ":1000", emptyDir,
 		"some-datasource", nil, nil)
 	if err := mgr.Start("wanted"); err != nil {
@@ -532,7 +533,7 @@ func TestManagerStartSimpleFeed(t *testing.T) {
 	defer os.RemoveAll(emptyDir)
 
 	cfg := NewCfgMem()
-	mgr := NewManager(Version, cfg, NewUUID(),
+	mgr := NewManager(Version, cfg, nil, NewUUID(),
 		nil, "", 1, "", ":1000", emptyDir,
 		"some-datasource", nil, nil)
 	if err := mgr.Start("wanted"); err != nil {
@@ -568,14 +569,14 @@ func TestManagerTags(t *testing.T) {
 	defer os.RemoveAll(emptyDir)
 
 	cfg := NewCfgMem()
-	mgr := NewManager(Version, cfg, NewUUID(), nil, "", 1, "", ":1000",
+	mgr := NewManager(Version, cfg, nil, NewUUID(), nil, "", 1, "", ":1000",
 		emptyDir, "some-datasource", nil, nil)
 	tm := mgr.tagsMap
 	if tm != nil {
 		t.Errorf("expected nil Tags()")
 	}
 
-	mgr = NewManager(Version, cfg, NewUUID(), []string{"a", "b"}, "", 1, "", ":1000",
+	mgr = NewManager(Version, cfg, nil, NewUUID(), []string{"a", "b"}, "", 1, "", ":1000",
 		emptyDir, "some-datasource", nil, nil)
 	tm = mgr.tagsMap
 	te := map[string]bool{}
@@ -590,7 +591,7 @@ func TestManagerClosePIndex(t *testing.T) {
 	emptyDir, _ := ioutil.TempDir("./tmp", "test")
 	defer os.RemoveAll(emptyDir)
 	meh := &TestMEH{}
-	m := NewManager(Version, nil, NewUUID(),
+	m := NewManager(Version, nil, nil, NewUUID(),
 		nil, "", 1, "", "", emptyDir, "", meh, nil)
 	if meh.lastPIndex != nil || meh.lastCall != "" {
 		t.Errorf("expected no callback events to meh")
@@ -635,7 +636,7 @@ func TestManagerRemovePIndex(t *testing.T) {
 	emptyDir, _ := ioutil.TempDir("./tmp", "test")
 	defer os.RemoveAll(emptyDir)
 	meh := &TestMEH{}
-	m := NewManager(Version, nil, NewUUID(), nil, "", 1, "", "",
+	m := NewManager(Version, nil, nil, NewUUID(), nil, "", 1, "", "",
 		emptyDir, "", meh, nil)
 	if meh.lastPIndex != nil || meh.lastCall != "" {
 		t.Errorf("expected no callback events to meh")
@@ -681,7 +682,7 @@ func TestManagerStrangeWorkReqs(t *testing.T) {
 	defer os.RemoveAll(emptyDir)
 	cfg := NewCfgMem()
 	meh := &TestMEH{}
-	m := NewManager(Version, cfg, NewUUID(), nil, "", 1, "", ":1000",
+	m := NewManager(Version, cfg, nil, NewUUID(), nil, "", 1, "", ":1000",
 		emptyDir, "some-datasource", meh, nil)
 	if err := m.Start("wanted"); err != nil {
 		t.Errorf("expected Manager.Start() to work, err: %v", err)
@@ -706,7 +707,7 @@ func TestManagerStartFeedByType(t *testing.T) {
 	emptyDir, _ := ioutil.TempDir("./tmp", "test")
 	defer os.RemoveAll(emptyDir)
 
-	m := NewManager(Version, nil, NewUUID(), nil, "", 1, "", "",
+	m := NewManager(Version, nil, nil, NewUUID(), nil, "", 1, "", "",
 		emptyDir, "", nil, nil)
 	err := m.startFeedByType("feedName", "indexName", "indexUUID",
 		"sourceType-is-unknown",
@@ -720,7 +721,7 @@ func TestManagerStartPIndex(t *testing.T) {
 	emptyDir, _ := ioutil.TempDir("./tmp", "test")
 	defer os.RemoveAll(emptyDir)
 
-	m := NewManager(Version, nil, NewUUID(), nil, "", 1, "", "",
+	m := NewManager(Version, nil, nil, NewUUID(), nil, "", 1, "", "",
 		emptyDir, "", nil, nil)
 	err := m.startPIndex(&PlanPIndex{IndexType: "unknown-index-type"})
 	if err == nil {
@@ -740,7 +741,7 @@ func TestManagerReStartPIndex(t *testing.T) {
 	defer os.RemoveAll(emptyDir)
 
 	meh := &TestMEH{}
-	m := NewManager(Version, nil, NewUUID(), nil, "", 1, "", "",
+	m := NewManager(Version, nil, nil, NewUUID(), nil, "", 1, "", "",
 		emptyDir, "", meh, nil)
 
 	err := m.startPIndex(&PlanPIndex{
@@ -771,7 +772,8 @@ func testManagerSimpleFeed(t *testing.T,
 	defer os.RemoveAll(emptyDir)
 	cfg := NewCfgMem()
 	meh := &TestMEH{}
-	m := NewManager(Version, cfg, NewUUID(), nil, "", 1, "", ":1000",
+	l := NewStdLibLog(os.Stderr, "", log.LstdFlags)
+	m := NewManager(Version, cfg, l, NewUUID(), nil, "", 1, "", ":1000",
 		emptyDir, "some-datasource", meh, nil)
 	if err := m.Start("wanted"); err != nil {
 		t.Errorf("expected Manager.Start() to work, err: %v", err)
@@ -792,7 +794,7 @@ func testManagerSimpleFeed(t *testing.T,
 	if meh.lastPIndex == nil {
 		t.Errorf("expected to be meh.lastPIndex")
 	}
-	feedName := FeedNameForPIndex(meh.lastPIndex, "")
+	feedName := FeedNameForPIndex(l, meh.lastPIndex, "")
 	feed, exists := feeds[feedName]
 	if !exists || feed == nil {
 		t.Errorf("expected there to be feed: %s", feedName)
@@ -823,7 +825,7 @@ func TestRemoveNodeDef(t *testing.T) {
 	defer os.RemoveAll(emptyDir)
 
 	cfg := NewCfgMem()
-	m := NewManager(Version, cfg, NewUUID(), nil, "", 1, "", ":1000",
+	m := NewManager(Version, cfg, nil, NewUUID(), nil, "", 1, "", ":1000",
 		emptyDir, "some-datasource", nil, nil)
 	if err := m.Start("wanted"); err != nil {
 		t.Errorf("expected Manager.Start() to work, err: %v", err)
@@ -926,7 +928,7 @@ func TestRegisterUnwanted(t *testing.T) {
 
 	uuid := NewUUID()
 	cfg := NewCfgMem()
-	m := NewManager(Version, cfg, uuid, nil, "", 1, "", ":1000",
+	m := NewManager(Version, cfg, nil, uuid, nil, "", 1, "", ":1000",
 		emptyDir, "some-datasource", nil, nil)
 	if err := m.Start("wanted"); err != nil {
 		t.Errorf("expected Manager.Start() to work, err: %v", err)
@@ -946,7 +948,7 @@ func TestRegisterUnwanted(t *testing.T) {
 		t.Errorf("expected mgr to be in nodeDefsWanted")
 	}
 
-	m1 := NewManager(Version, cfg, uuid, nil, "", 1, "", ":1000",
+	m1 := NewManager(Version, cfg, nil, uuid, nil, "", 1, "", ":1000",
 		emptyDir, "some-datasource", nil, nil)
 	if err = m1.Start("unchanged"); err != nil {
 		t.Errorf("expected Manager.Start(unchanged) to work, err: %v", err)
@@ -966,7 +968,7 @@ func TestRegisterUnwanted(t *testing.T) {
 		t.Errorf("expected mgr to be in nodeDefsWanted")
 	}
 
-	m2 := NewManager(Version, cfg, uuid, nil, "", 1, "", ":1000",
+	m2 := NewManager(Version, cfg, nil, uuid, nil, "", 1, "", ":1000",
 		emptyDir, "some-datasource", nil, nil)
 	if err = m2.Start("unwanted"); err != nil {
 		t.Errorf("expected Manager.Start(unwanted) to work, err: %v", err)
@@ -989,7 +991,7 @@ func TestRegisterUnwanted(t *testing.T) {
 		t.Errorf("expected mgr to not be in nodeDefsWanted")
 	}
 
-	m3 := NewManager(Version, cfg, uuid, nil, "", 1, "", ":1000",
+	m3 := NewManager(Version, cfg, nil, uuid, nil, "", 1, "", ":1000",
 		emptyDir, "some-datasource", nil, nil)
 	if err = m3.Start("unknown"); err != nil {
 		t.Errorf("expected Manager.Start(unknown) to work, err: %v", err)
@@ -1026,7 +1028,7 @@ func TestUnregisterNodes(t *testing.T) {
 		t.Errorf("expected no err when removing unknown uuid")
 	}
 
-	m := NewManager(Version, cfg, uuid, nil, "", 1, "", ":1000",
+	m := NewManager(Version, cfg, nil, uuid, nil, "", 1, "", ":1000",
 		emptyDir, "some-datasource", nil, nil)
 	err = m.Start("wanted")
 	if err != nil {
@@ -1081,7 +1083,7 @@ func TestManagerRestartPIndex(t *testing.T) {
 	emptyDir, _ := ioutil.TempDir("./tmp", "test")
 	defer os.RemoveAll(emptyDir)
 	meh := &TestMEH{}
-	m := NewManager(Version, nil, NewUUID(),
+	m := NewManager(Version, nil, nil, NewUUID(),
 		nil, "", 1, "", "", emptyDir, "", meh, nil)
 	if meh.lastPIndex != nil || meh.lastCall != "" {
 		t.Errorf("expected no callback events to meh")
@@ -1131,7 +1133,7 @@ func TestManagerMultipleServers(t *testing.T) {
 	defer os.RemoveAll(emptyDir)
 	meh := &TestMEH{}
 	serverStr := "localhost:1000;localhost:1001;localhost:1002"
-	m := NewManager(Version, nil, NewUUID(),
+	m := NewManager(Version, nil, nil, NewUUID(),
 		nil, "", 1, "", "", emptyDir, serverStr, meh, nil)
 	err := m.Start("wanted")
 	if err != nil {
@@ -1153,7 +1155,7 @@ func TestManagerPIndexRestartWithFeedAllotmentOptionChange(t *testing.T) {
 	}
 
 	options := map[string]string{"feedAllotment": FeedAllotmentOnePerPIndex}
-	m := NewManager(Version, cfg, NewUUID(), nil, "", 1, "", ":1000",
+	m := NewManager(Version, cfg, nil, NewUUID(), nil, "", 1, "", ":1000",
 		emptyDir, "some-datasource", nil, options)
 	if err = m.Start("wanted"); err != nil {
 		t.Errorf("expected Manager.Start() to work, err: %v", err)
@@ -1286,7 +1288,7 @@ func TestManagerPIndexRestartWithReplicaCountChange(t *testing.T) {
 		"feedAllotment":      FeedAllotmentOnePerPIndex,
 		"maxReplicasAllowed": "10",
 	}
-	m := NewManager(Version, cfg, NewUUID(), nil, "", 1, "", ":1000",
+	m := NewManager(Version, cfg, nil, NewUUID(), nil, "", 1, "", ":1000",
 		emptyDir, "some-datasource", nil, options1)
 	if err = m.Start("wanted"); err != nil {
 		t.Errorf("expected Manager.Start() to work, err: %v", err)
